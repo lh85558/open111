@@ -3,12 +3,12 @@
 *FileVersion: "1.0"
 *LanguageVersion: Chinese
 *LanguageEncoding: ISOLatin1
-*PCFileName: "HPLJ1020.PPD"
-*Product: "(HP LaserJet 1020)"
+*PCFileName: "HPLJ1020P.PPD"
+*Product: "(HP LaserJet 1020 Plus)"
 *Manufacturer: "HP"
-*ModelName: "HP LaserJet 1020"
-*ShortNickName: "HP LaserJet 1020"
-*NickName: "HP LaserJet 1020, hpcups 3.23.5"
+*ModelName: "HP LaserJet 1020 Plus"
+*ShortNickName: "HP LaserJet 1020 Plus"
+*NickName: "HP LaserJet 1020 Plus, hpcups 3.23.5"
 *PSVersion: "(3010.000) 0"
 *LanguageLevel: "3"
 *ColorDevice: False
@@ -18,7 +18,7 @@
 *LandscapeOrientation: Plus90
 *VariablePaperSize: False
 *TTRasterizer: Type42
-*1284DeviceID: "MFG:HP;MDL:LaserJet 1020;CMD:ZJS;CLS:PRINTER;DES:HP LaserJet 1020;"
+*1284DeviceID: "MFG:HP;MDL:LaserJet 1020 Plus;CMD:ZJS;CLS:PRINTER;DES:HP LaserJet 1020 Plus;"
 
 *% ==== Device Capabilities =============
 *OpenUI *PageSize/Media Size: PickOne
@@ -183,4 +183,13 @@
 *Font Palatino-Roman: Standard "(001.005S)" Standard ROM
 *Font Palatino-Bold: Standard "(001.005S)" Standard ROM
 *Font Palatino-BoldItalic: Standard "(001.005S)" Standard ROM
-*Font Pal
+*Font Palatino-Italic: Standard "(001.005S)" Standard ROM
+*Font Symbol: Special "(001.007S)" Special ROM
+*Font Times-Bold: Standard "(001.007S)" Standard ROM
+*Font Times-BoldItalic: Standard "(001.007S)" Standard ROM
+*Font Times-Italic: Standard "(001.007S)" Standard ROM
+*Font Times-Roman: Standard "(001.007S)" Standard ROM
+*Font ZapfChancery-MediumItalic: Standard "(001.006S)" Standard ROM
+*Font ZapfDingbats: Special "(001.004S)" Special ROM
+
+*% End of PPD file

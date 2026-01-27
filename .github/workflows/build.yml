@@ -1,0 +1,129 @@
+name: Build THDN-PrintServer OpenWrt17 Firmware
+
+on:
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'build.sh'
+      - 'configs/**'
+      - 'packages/**'
+      - 'patches/**'
+      - 'scripts/**'
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
+        required: false
+        default: false
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Free up disk space
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+        docker rmi $(docker image ls -aq) || true
+        
+    - name: Setup build environment
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential ccache ecj fastjar file g++ gawk \
+          gettext git java-propose-classpath libelf-dev libncurses5-dev \
+          libncursesw5-dev libssl-dev python python2.7-dev python3 \
+          unzip wget python3-distutils python3-setuptools python3-dev \
+          rsync subversion swig time xsltproc zlib1g-dev \
+          libxml-parser-perl gcc-multilib flex git-core \
+          libusb-dev libusb-1.0-0-dev uuid-dev libacl1-dev \
+          liblzo2-dev liblzma-dev zlib1g-dev e2fsprogs \
+          m4 pkg-config autoconf autoconf-archive autotools-dev \
+          libtool python3-pip
+        
+    - name: Cache OpenWrt downloads
+      uses: actions/cache@v3
+      with:
+        path: |
+          openwrt/dl
+          openwrt/.ccache
+        key: openwrt-${{ runner.os }}-${{ hashFiles('**/build.sh') }}
+        restore-keys: |
+          openwrt-${{ runner.os }}-
+          
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
+      if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled == 'true' }}
+      with:
+        limit-access-to-actor: true
+        
+    - name: Build firmware
+      run: |
+        export FORCE_UNSAFE_CONFIGURE=1
+        ./build.sh
+        
+    - name: Upload firmware artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: thdn-printserver-firmware
+        path: |
+          output/*.bin
+          output/firmware-info.txt
+        retention-days: 30
+        
+    - name: Create Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v$(date +%Y%m%d)-$(git rev-parse --short HEAD)
+        name: THDN-PrintServer Firmware $(date +%Y%m%d)
+        body: |
+          ## THDN-PrintServer OpenWrt17 固件
+          
+          ### 构建信息
+          - 构建时间: $(date)
+          - OpenWrt版本: 17.01.7
+          - 目标平台: ar71xx/generic
+          
+          ### 主要功能
+          - ✅ CUPS 中文打印服务
+          - ✅ HP LaserJet 1020/1020plus 驱动
+          - ✅ USB 打印机支持
+          - ✅ 定时重启功能
+          - ✅ 中文 Web 界面
+          
+          ### 默认配置
+          - LAN IP: 192.168.10.1
+          - Web登录: admin / thdn12345678
+          - Wi-Fi SSID: THDN-dayin
+          - Wi-Fi密码: thdn12345678
+          
+          ### 固件文件
+          - `sysupgrade.bin` - 系统升级固件
+          - `factory.bin` - 工厂固件
+          
+          ### 使用说明
+          1. 下载对应的固件文件
+          2. 通过 Web 界面或 TFTP 刷入固件
+          3. 连接 USB 打印机
+          4. 访问 http://192.168.10.1:631 管理打印机
+          
+          ### 注意事项
+          - 请确保路由器有 16MB Flash 存储
+          - 刷机有风险，请谨慎操作
+          - 建议先备份原厂固件
+        files: |
+          output/*.bin
+          output/firmware-info.txt
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

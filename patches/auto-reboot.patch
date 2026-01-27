@@ -1,0 +1,48 @@
+--- a/package/base-files/files/etc/init.d/boot
++++ b/package/base-files/files/etc/init.d/boot
+@@ -45,6 +45,11 @@ boot() {
+ 	# make sure /etc/resolv.conf exists
+ 	touch /tmp/resolv.conf.auto
+ 
++	# THDN-PrintServer: 设置定时重启
++	echo "0 4 * * * /sbin/reboot" >> /etc/crontabs/root
++	/etc/init.d/cron enable
++	/etc/init.d/cron start
++
+ 	# load modules and core utilities
+ 	[ -f /etc/modules.d/00-system ] && {
+ 		cat /etc/modules.d/00-system | grep -v "^#" | grep -v "^$" | sort -r | \
+--- a/package/base-files/files/etc/banner
++++ b/package/base-files/files/etc/banner
+@@ -4,5 +4,8 @@
+  |_______||   __|_____|__|__||________||__|  |____|
+           |__| W I R E L E S S   F R E E D O M
+  -----------------------------------------------------
+- CHAOS CALMER (Chaos Calmer, r4937)
++ THDN-PrintServer OpenWrt17 (Build %C)
++ 基于 OpenWrt 17.01.7 稳定版
++ 集成 CUPS 中文打印服务
++ 支持 HP LaserJet 1020/1020plus
+  -----------------------------------------------------
+--- a/package/base-files/files/etc/config/system
++++ b/package/base-files/files/etc/config/system
+@@ -1,7 +1,7 @@
+ config system
+-	option hostname		OpenWrt
++	option hostname		THDN-PrintServer
+ 	option timezone		CST-8
+-	option ttylogin		1
++	option ttylogin		0
+ 	option log_size		64
+ 	option urandom_seed	0
+ 
+--- a/package/base-files/files/etc/config/network
++++ b/package/base-files/files/etc/config/network
+@@ -10,7 +10,7 @@ config interface lan
+ 	option type		bridge
+ 	option ifname		eth0
+ 	option proto		static
+-	option ipaddr		192.168.1.1
++	option ipaddr		192.168.10.1
+ 	option netmask		255.255.255.0
+ 	option ip6assign	60
