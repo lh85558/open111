@@ -43,12 +43,12 @@ check_system() {
     fi
     
     # 检查必要工具
-    local required_tools=("git" "wget" "curl" "build-essential" "libncurses5-dev" "zlib1g-dev" "gawk" "git" "gettext" "libssl-dev" "xsltproc" "rsync" "wget" "unzip" "python3")
+    local required_tools=("git" "wget" "curl" "gawk" "gettext" "xsltproc" "rsync" "unzip" "python3")
     
     for tool in "${required_tools[@]}"; do
         if ! command -v "$tool" &> /dev/null; then
             log_error "缺少必要工具: $tool"
-            log_info "请运行: sudo apt update && sudo apt install -y ${required_tools[*]}"
+            log_info "请运行: sudo apt update && sudo apt install -y build-essential libncurses5-dev zlib1g-dev libssl-dev ${required_tools[*]}"
             exit 1
         fi
     done
@@ -192,7 +192,7 @@ OpenWrt版本: ${OPENWRT_VERSION}
 
 默认配置:
 - LAN IP: ${LAN_IP}
-- Web登录: admin / ${ADMIN_PASS}
+- Web登录: root / ${ADMIN_PASS}
 - Wi-Fi SSID: ${WIFI_SSID}
 - Wi-Fi密码: ${WIFI_KEY}
 - 主机名: ${HOSTNAME}
