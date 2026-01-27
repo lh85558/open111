@@ -139,11 +139,6 @@ apply_patches() {
     
     cd openwrt
     
-    # 应用 CUPS 中文补丁
-    if [ -f "../patches/cups-chinese.patch" ]; then
-        patch -p1 < ../patches/cups-chinese.patch
-    fi
-    
     # 应用定时重启补丁
     if [ -f "../patches/auto-reboot.patch" ]; then
         patch -p1 < ../patches/auto-reboot.patch
