@@ -55,9 +55,6 @@ define Package/cups-config/install
 	$(INSTALL_DATA) ./files/HP_LaserJet_1020.ppd $(1)/usr/share/cups/model/
 	$(INSTALL_DATA) ./files/HP_LaserJet_1020plus.ppd $(1)/usr/share/cups/model/
 	
-	# 中文本地化文件
-	$(INSTALL_DATA) ./files/zh_CN.po $(1)/usr/share/locale/zh_CN/LC_MESSAGES/cups_zh_CN.po
-	
 	# 打印机自动检测脚本
 	$(INSTALL_BIN) ./files/detect-printer.sh $(1)/root/detect-printer.sh
 endef

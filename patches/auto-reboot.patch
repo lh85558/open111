@@ -21,7 +21,7 @@
 - CHAOS CALMER (Chaos Calmer, r4937)
 + THDN-PrintServer OpenWrt17 (Build %C)
 + 基于 OpenWrt 17.01.7 稳定版
-+ 集成 CUPS 中文打印服务
++ 集成 CUPS 打印服务
 + 支持 HP LaserJet 1020/1020plus
   -----------------------------------------------------
 --- a/package/base-files/files/etc/config/system
@@ -45,4 +45,4 @@
 -	option ipaddr		192.168.1.1
 +	option ipaddr		192.168.10.1
  	option netmask		255.255.255.0
- 	option ip6assign	60
+ 	option ip6assign		60

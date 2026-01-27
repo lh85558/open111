@@ -98,4 +98,205 @@ config dnsmasq
         option local '/lan/'
         option domain 'lan'
         option expandhosts '1'
-        option nonegcache
+        option nonegcache '0'
+        option cachesize '1000'
+        option authoritative '1'
+        option readethers '1'
+        option leasefile '/tmp/dhcp.leases'
+        option resolvfile '/tmp/resolv.conf.auto'
+        option nonwildcard '1'
+        list server '/mycompany.local/10.0.0.1'
+
+config dhcp 'lan'
+        option interface 'lan'
+        option ignore '0'
+        option start '100'
+        option limit '150'
+        option leasetime '12h'
+        option dhcpv6 'server'
+        option ra 'server'
+        list dhcp_option '3,${LAN_IP}'
+        list dhcp_option '6,${LAN_IP}'
+
+config dhcp 'wan'
+        option interface 'wan'
+        option ignore '1'
+
+config odhcpd 'odhcpd'
+        option maindhcp '0'
+        option leasefile '/tmp/hosts/odhcpd'
+        option leasetrigger '/usr/sbin/odhcpd-update'
+EOF
+
+    # 创建防火墙配置
+    cat > /etc/config/firewall << EOF
+config defaults
+        option syn_flood '1'
+        option input 'ACCEPT'
+        option output 'ACCEPT'
+        option forward 'REJECT'
+
+config zone
+        option name 'lan'
+        option input 'ACCEPT'
+        option output 'ACCEPT'
+        option forward 'ACCEPT'
+        option network 'lan'
+
+config zone
+        option name 'wan'
+        option input 'REJECT'
+        option output 'ACCEPT'
+        option forward 'REJECT'
+        option masq '1'
+        option mtu_fix '1'
+        option network 'wan wan6'
+
+config forwarding
+        option src 'lan'
+        option dest 'wan'
+
+config rule
+        option name 'Allow-DHCP-Renew'
+        option src 'wan'
+        option proto 'udp'
+        option dest_port '68'
+        option target 'ACCEPT'
+        option family 'ipv4'
+
+config rule
+        option name 'Allow-Ping'
+        option src 'wan'
+        option proto 'icmp'
+        option icmp_type 'echo-request'
+        option family 'ipv4'
+        option target 'ACCEPT'
+
+config rule
+        option name 'Allow-IGMP'
+        option src 'wan'
+        option proto 'igmp'
+        option family 'ipv4'
+        option target 'ACCEPT'
+
+config rule
+        option name 'Allow-DHCPv6'
+        option src 'wan'
+        option proto 'udp'
+        option src_ip 'fc00::/6'
+        option dest_ip 'fc00::/6'
+        option dest_port '546'
+        option family 'ipv6'
+        option target 'ACCEPT'
+
+config rule
+        option name 'Allow-MLD'
+        option src 'wan'
+        option proto 'icmp'
+        option src_ip 'fe80::/10'
+        list icmp_type '130/0'
+        list icmp_type '131/0'
+        list icmp_type '132/0'
+        list icmp_type '143/0'
+        option family 'ipv6'
+        option target 'ACCEPT'
+
+config rule
+        option name 'Allow-ICMPv6-Input'
+        option src 'wan'
+        option proto 'icmp'
+        list icmp_type 'echo-request'
+        list icmp_type 'echo-reply'
+        list icmp_type 'destination-unreachable'
+        list icmp_type 'packet-too-big'
+        list icmp_type 'time-exceeded'
+        list icmp_type 'bad-header'
+        list icmp_type 'unknown-header-type'
+        option limit '1000/sec'
+        option family 'ipv6'
+        option target 'ACCEPT'
+
+config rule
+        option name 'Allow-ICMPv6-Forward'
+        option src 'wan'
+        option dest '*'
+        option proto 'icmp'
+        list icmp_type 'echo-request'
+        list icmp_type 'echo-reply'
+        list icmp_type 'destination-unreachable'
+        list icmp_type 'packet-too-big'
+        list icmp_type 'time-exceeded'
+        list icmp_type 'bad-header'
+        list icmp_type 'unknown-header-type'
+        option limit '1000/sec'
+        option family 'ipv6'
+        option target 'ACCEPT'
+
+config rule
+        option name 'Allow-IPSec-ESP'
+        option src 'wan'
+        option dest 'lan'
+        option proto 'esp'
+        option target 'ACCEPT'
+
+config rule
+        option name 'Allow-ISAKMP'
+        option src 'wan'
+        option dest 'lan'
+        option dest_port '500'
+        option proto 'udp'
+        option target 'ACCEPT'
+
+config include
+        option path '/etc/firewall.user'
+EOF
+
+    echo "网络配置完成"
+}
+
+# 设置管理员密码
+setup_admin_password() {
+    echo "设置管理员密码..."
+    echo -e "${ADMIN_PASS}\n${ADMIN_PASS}" | passwd root
+    echo "管理员密码设置完成"
+}
+
+# 重启网络服务
+restart_network() {
+    echo "重启网络服务..."
+    /etc/init.d/network restart
+    /etc/init.d/dnsmasq restart
+    /etc/init.d/firewall restart
+    echo "网络服务重启完成"
+}
+
+# 主函数
+main() {
+    echo "开始配置 THDN-PrintServer 网络参数..."
+    echo ""
+    
+    setup_network
+    setup_admin_password
+    restart_network
+    
+    echo ""
+    echo "============================================"
+    echo "THDN-PrintServer 网络配置完成！"
+    echo "============================================"
+    echo "LAN IP地址: ${LAN_IP}"
+    echo "Wi-Fi SSID: ${WIFI_SSID}"
+    echo "Wi-Fi密码: ${WIFI_KEY}"
+    echo "管理员密码: ${ADMIN_PASS}"
+    echo "主机名: ${HOSTNAME}"
+    echo "============================================"
+    echo ""
+    echo "请使用以下地址访问管理界面:"
+    echo "  http://${LAN_IP}"
+    echo ""
+    echo "请使用以下地址访问 CUPS 管理界面:"
+    echo "  http://${LAN_IP}:631"
+    echo "============================================"
+}
+
+# 运行主函数
+main "$@"

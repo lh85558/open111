@@ -42,7 +42,6 @@
 +define Package/cups-locale-zh-cn/install
 +	$(INSTALL_DIR) $(1)/usr/share/locale/zh_CN/LC_MESSAGES
 +	$(INSTALL_DATA) ./files/cups_zh_CN.mo $(1)/usr/share/locale/zh_CN/LC_MESSAGES/cups.mo
-+	$(INSTALL_DATA) ./files/cups_zh_CN.po $(1)/usr/share/locale/zh_CN/LC_MESSAGES/cups_zh_CN.po
 +endef
 +
 +$(eval $(call BuildPackage,cups-locale-zh-cn))
@@ -50,27 +49,3 @@
  define Package/cups-bjnp/install
  	$(INSTALL_DIR) $(1)/usr/lib/cups/backend
  	$(INSTALL_BIN) $(PKG_BUILD_DIR)/backend/bjnp $(1)/usr/lib/cups/backend
---- a/feeds/luci/applications/luci-app-cups/luasrc/model/cbi/cups.lua
-+++ b/feeds/luci/applications/luci-app-cups/luasrc/model/cbi/cups.lua
-@@ -15,7 +15,7 @@ m = Map("cups", translate("CUPS - Common Unix Printing System"))
- s = m:section(TypedSection, "cups", "")
- s.addremove = false
- s.anonymous = true
--s:option(Flag, "enabled", translate("Enable CUPS"))
-+s:option(Flag, "enabled", translate("启用 CUPS 打印服务"))
- 
- s:option(Value, "port", translate("Port")).default = 631
- s:option(Value, "interface", translate("Interface")).default = "lan"
---- a/feeds/luci/applications/luci-app-cups/luasrc/controller/cups.lua
-+++ b/feeds/luci/applications/luci-app-cups/luasrc/controller/cups.lua
-@@ -8,8 +8,8 @@ function index()
- 		return
- 	end
- 	
--	local page = entry({"admin", "services", "cups"}, cbi("cups"), _("CUPS"))
-+	local page = entry({"admin", "services", "cups"}, cbi("cups"), _("CUPS 打印服务"))
- 	page.dependent = true
--	page = entry({"admin", "services", "cups_status"}, call("act_status"))
-+	page = entry({"admin", "services", "cups_status"}, call("act_status"), _("打印服务状态"))
- 	page.leaf = true
- end

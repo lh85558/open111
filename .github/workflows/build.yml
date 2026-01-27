@@ -9,6 +9,7 @@ on:
       - 'packages/**'
       - 'patches/**'
       - 'scripts/**'
+      - '.github/workflows/**'
   pull_request:
     branches: [ main, master ]
   workflow_dispatch:
@@ -33,6 +34,8 @@ jobs:
         sudo rm -rf "/usr/local/share/boost"
         sudo rm -rf "$AGENT_TOOLSDIRECTORY"
         docker rmi $(docker image ls -aq) || true
+        sudo apt-get clean
+        sudo rm -rf /var/lib/apt/lists/*
         
     - name: Setup build environment
       run: |
@@ -55,7 +58,7 @@ jobs:
         path: |
           openwrt/dl
           openwrt/.ccache
-        key: openwrt-${{ runner.os }}-${{ hashFiles('**/build.sh') }}
+        key: openwrt-${{ runner.os }}-${{ hashFiles('build.sh') }}
         restore-keys: |
           openwrt-${{ runner.os }}-
           
@@ -72,6 +75,7 @@ jobs:
         
     - name: Upload firmware artifacts
       uses: actions/upload-artifact@v4
+      if: success()
       with:
         name: thdn-printserver-firmware
         path: |
@@ -94,7 +98,7 @@ jobs:
           - 目标平台: ar71xx/generic
           
           ### 主要功能
-          - ✅ CUPS 中文打印服务
+          - ✅ CUPS 打印服务
           - ✅ HP LaserJet 1020/1020plus 驱动
           - ✅ USB 打印机支持
           - ✅ 定时重启功能
@@ -102,7 +106,7 @@ jobs:
           
           ### 默认配置
           - LAN IP: 192.168.10.1
-          - Web登录: admin / thdn12345678
+          - Web登录: root / thdn12345678
           - Wi-Fi SSID: THDN-dayin
           - Wi-Fi密码: thdn12345678
           

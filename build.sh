@@ -81,13 +81,15 @@ clone_openwrt() {
     log_info "克隆 OpenWrt 源码..."
     
     if [ ! -d "openwrt" ]; then
-        # 使用国内镜像源
-        git clone https://github.com.cnpmjs.org/openwrt/openwrt.git -b lede-17.01
+        # 使用官方源码仓库
+        git clone https://github.com/openwrt/openwrt.git -b openwrt-17.01
         cd openwrt
-        git checkout v${OPENWRT_VERSION}
+        git checkout openwrt-17.01.7
     else
         cd openwrt
         log_info "源码已存在，更新到最新版本"
+        git fetch origin
+        git checkout openwrt-17.01.7
         git pull
     fi
     

@@ -16,8 +16,6 @@ CONFIG_TARGET_ROOTFS_TARGZ=y
 
 # 内核配置
 CONFIG_KERNEL_KALLSYMS=y
-CONFIG_KERNEL_DEBUG_INFO=y
-CONFIG_KERNEL_DEBUG_KERNEL=y
 CONFIG_KERNEL_PRINTK=y
 CONFIG_KERNEL_SWAP=y
 
@@ -62,7 +60,6 @@ CONFIG_PACKAGE_uci=y
 CONFIG_PACKAGE_uclient-fetch=y
 CONFIG_PACKAGE_urandom-seed=y
 CONFIG_PACKAGE_urngd=y
-CONFIG_PACKAGE_wget-ssl=y
 CONFIG_PACKAGE_zlib=y
 
 # 网络工具
@@ -99,7 +96,6 @@ CONFIG_PACKAGE_libubus-lua=y
 CONFIG_PACKAGE_libuci=y
 CONFIG_PACKAGE_libuclient=y
 CONFIG_PACKAGE_libustream-openssl=y
-CONFIG_PACKAGE_libxtables=y
 CONFIG_PACKAGE_rpcd=y
 CONFIG_PACKAGE_rpcd-mod-file=y
 CONFIG_PACKAGE_rpcd-mod-iwinfo=y
@@ -128,7 +124,6 @@ CONFIG_PACKAGE_usbutils=y
 
 # CUPS 打印服务
 CONFIG_PACKAGE_cups=y
-CONFIG_PACKAGE_cups-bjnp=y
 CONFIG_PACKAGE_cups-client=y
 CONFIG_PACKAGE_cups-filters=y
 CONFIG_PACKAGE_cups-ppdc=y
@@ -151,22 +146,11 @@ CONFIG_PACKAGE_libexpat=y
 CONFIG_PACKAGE_libgnutls=y
 CONFIG_PACKAGE_libnettle=y
 
-# HPLIP 驱动
-CONFIG_PACKAGE_hplip=y
-CONFIG_PACKAGE_hplip-hpijs=y
-CONFIG_PACKAGE_hplip-sane=y
-CONFIG_PACKAGE_libhpmud=y
-CONFIG_PACKAGE_libhpip=y
-CONFIG_PACKAGE_libsane=y
-CONFIG_PACKAGE_libusb-1.0=y
-CONFIG_PACKAGE_libusb-compat=y
-
 # 中文支持
 CONFIG_PACKAGE_luci-i18n-base-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-firewall-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-opkg-zh-cn=y
 CONFIG_PACKAGE_luci-i18n-system-zh-cn=y
-CONFIG_PACKAGE_luci-i18n-cups-zh-cn=y
 CONFIG_PACKAGE_kmod-nls-cp437=y
 CONFIG_PACKAGE_kmod-nls-iso8859-1=y
 CONFIG_PACKAGE_kmod-nls-utf8=y
@@ -181,8 +165,6 @@ CONFIG_PACKAGE_luci-app-firewall=y
 CONFIG_PACKAGE_luci-app-opkg=y
 CONFIG_PACKAGE_luci-proto-ppp=y
 CONFIG_PACKAGE_luci-proto-ipv6=y
-CONFIG_PACKAGE_luci-app-cups=y
-CONFIG_PACKAGE_luci-app-hd-idle=y
 
 # 系统工具
 CONFIG_PACKAGE_bash=y
@@ -194,33 +176,13 @@ CONFIG_PACKAGE_cron=y
 CONFIG_PACKAGE_crontab=y
 CONFIG_PACKAGE_dmesg=y
 CONFIG_PACKAGE_htop=y
-CONFIG_PACKAGE_i2c-tools=y
-CONFIG_PACKAGE_kmod-i2c-core=y
 CONFIG_PACKAGE_less=y
-CONFIG_PACKAGE_lm-sensors=y
 CONFIG_PACKAGE_lsof=y
-CONFIG_PACKAGE_mailsend=y
-CONFIG_PACKAGE_mc=y
 CONFIG_PACKAGE_nano=y
 CONFIG_PACKAGE_netstat=y
-CONFIG_PACKAGE_nmap=y
 CONFIG_PACKAGE_openssh-sftp-client=y
 CONFIG_PACKAGE_openssh-sftp-server=y
-CONFIG_PACKAGE_procps-ng=y
-CONFIG_PACKAGE_procps-ng-free=y
-CONFIG_PACKAGE_procps-ng-kill=y
-CONFIG_PACKAGE_procps-ng-pgrep=y
-CONFIG_PACKAGE_procps-ng-pkill=y
-CONFIG_PACKAGE_procps-ng-pmap=y
-CONFIG_PACKAGE_procps-ng-ps=y
-CONFIG_PACKAGE_procps-ng-slabtop=y
-CONFIG_PACKAGE_procps-ng-snice=y
-CONFIG_PACKAGE_procps-ng-tload=y
-CONFIG_PACKAGE_procps-ng-top=y
-CONFIG_PACKAGE_procps-ng-uptime=y
-CONFIG_PACKAGE_procps-ng-vmstat=y
-CONFIG_PACKAGE_procps-ng-w=y
-CONFIG_PACKAGE_procps-ng-watch=y
+CONFIG_PACKAGE_procps=y
 CONFIG_PACKAGE_screen=y
 CONFIG_PACKAGE_shadow-chpasswd=y
 CONFIG_PACKAGE_shadow-chsh=y
@@ -233,78 +195,16 @@ CONFIG_PACKAGE_shadow-grpck=y
 CONFIG_PACKAGE_shadow-useradd=y
 CONFIG_PACKAGE_shadow-userdel=y
 CONFIG_PACKAGE_shadow-usermod=y
-CONFIG_PACKAGE_strace=y
 CONFIG_PACKAGE_tar=y
-CONFIG_PACKAGE_tree=y
-CONFIG_PACKAGE_ttyd=y
 CONFIG_PACKAGE_unzip=y
 CONFIG_PACKAGE_vim=y
 CONFIG_PACKAGE_wget=y
-CONFIG_PACKAGE_whereis=y
 CONFIG_PACKAGE_zip=y
 
-# 文件系统
+# 文件系统（精简）
 CONFIG_PACKAGE_kmod-fs-autofs4=y
 CONFIG_PACKAGE_kmod-fs-cifs=y
-CONFIG_PACKAGE_kmod-fs-configfs=y
-CONFIG_PACKAGE_kmod-fs-exportfs=y
-CONFIG_PACKAGE_kmod-fs-fscache=y
-CONFIG_PACKAGE_kmod-fs-hfs=y
-CONFIG_PACKAGE_kmod-fs-hfsplus=y
 CONFIG_PACKAGE_kmod-fs-isofs=y
-CONFIG_PACKAGE_kmod-fs-jfs=y
-CONFIG_PACKAGE_kmod-fs-minix=y
-CONFIG_PACKAGE_kmod-fs-msdos=y
 CONFIG_PACKAGE_kmod-fs-nfs=y
 CONFIG_PACKAGE_kmod-fs-nfs-common=y
 CONFIG_PACKAGE_kmod-fs-nfsd=y
-CONFIG_PACKAGE_kmod-fs-reiserfs=y
-CONFIG_PACKAGE_kmod-fs-squashfs=y
-CONFIG_PACKAGE_kmod-fs-udf=y
-CONFIG_PACKAGE_kmod-fs-xfs=y
-
-# 移除不必要的包以节省空间
-# CONFIG_PACKAGE_ipv6helper is not set
-# CONFIG_PACKAGE_kmod-ipt-nat6 is not set
-# CONFIG_PACKAGE_kmod-nf-nat6 is not set
-# CONFIG_PACKAGE_kmod-ipt-ah is not set
-# CONFIG_PACKAGE_kmod-ipt-comp is not set
-# CONFIG_PACKAGE_kmod-ipt-debug is not set
-# CONFIG_PACKAGE_kmod-ipt-delude is not set
-# CONFIG_PACKAGE_kmod-ipt-dhcpmac is not set
-# CONFIG_PACKAGE_kmod-ipt-dnetmap is not set
-# CONFIG_PACKAGE_kmod-ipt-extra is not set
-# CONFIG_PACKAGE_kmod-ipt-filter is not set
-# CONFIG_PACKAGE_kmod-ipt-fuzzy is not set
-# CONFIG_PACKAGE_kmod-ipt-geoip is not set
-# CONFIG_PACKAGE_kmod-ipt-hashlimit is not set
-# CONFIG_PACKAGE_kmod-ipt-iface is not set
-# CONFIG_PACKAGE_kmod-ipt-ipmark is not set
-# CONFIG_PACKAGE_kmod-ipt-ipopt is not set
-# CONFIG_PACKAGE_kmod-ipt-ipp2p is not set
-# CONFIG_PACKAGE_kmod-ipt-iprange is not set
-# CONFIG_PACKAGE_kmod-ipt-ipsec is not set
-# CONFIG_PACKAGE_kmod-ipt-ipset is not set
-# CONFIG_PACKAGE_kmod-ipt-ipv4options is not set
-# CONFIG_PACKAGE_kmod-ipt-led is not set
-# CONFIG_PACKAGE_kmod-ipt-length2 is not set
-# CONFIG_PACKAGE_kmod-ipt-logmark is not set
-# CONFIG_PACKAGE_kmod-ipt-lscan is not set
-# CONFIG_PACKAGE_kmod-ipt-lua is not set
-# CONFIG_PACKAGE_kmod-ipt-nathelper-rtsp is not set
-# CONFIG_PACKAGE_kmod-ipt-nathelper-extra is not set
-# CONFIG_PACKAGE_kmod-ipt-nflog is not set
-# CONFIG_PACKAGE_kmod-ipt-nfqueue is not set
-# CONFIG_PACKAGE_kmod-ipt-psd is not set
-# CONFIG_PACKAGE_kmod-ipt-quota2 is not set
-# CONFIG_PACKAGE_kmod-ipt-raw is not set
-# CONFIG_PACKAGE_kmod-ipt-rawpost is not set
-# CONFIG_PACKAGE_kmod-ipt-rpfilter is not set
-# CONFIG_PACKAGE_kmod-ipt-rtsp is not set
-# CONFIG_PACKAGE_kmod-ipt-socket is not set
-# CONFIG_PACKAGE_kmod-ipt-sysrq is not set
-# CONFIG_PACKAGE_kmod-ipt-tarpit is not set
-# CONFIG_PACKAGE_kmod-ipt-tee is not set
-# CONFIG_PACKAGE_kmod-ipt-tproxy is not set
-# CONFIG_PACKAGE_kmod-ipt-u32 is not set
-# CONFIG_PACKAGE_kmod-ipt-ulog is not set

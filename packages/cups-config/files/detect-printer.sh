@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # THDN-PrintServer 打印机自动检测和配置脚本
 # 自动检测 USB 打印机并配置 CUPS
 
@@ -48,19 +48,19 @@ detect_hp_laserjet() {
     log_info "检测 HP LaserJet 1020/1020plus 打印机..."
     
     # 检查 USB 设备 ID
-    local hp_1020_ids=("03f0:2b17" "03f0:1717")
-    local detected=0
+    local hp_1020_detected=0
     
-    for device_id in "${hp_1020_ids[@]}"; do
-        if lsusb | grep -q "$device_id"; then
-            log_info "检测到 HP LaserJet 1020/1020plus (ID: $device_id)"
-            configure_hp_laserjet_1020
-            detected=1
-            break
-        fi
-    done
+    if lsusb | grep -q "03f0:2b17"; then
+        log_info "检测到 HP LaserJet 1020 (ID: 03f0:2b17)"
+        configure_hp_laserjet_1020
+        hp_1020_detected=1
+    elif lsusb | grep -q "03f0:1717"; then
+        log_info "检测到 HP LaserJet 1020plus (ID: 03f0:1717)"
+        configure_hp_laserjet_1020plus
+        hp_1020_detected=1
+    fi
     
-    if [ $detected -eq 0 ]; then
+    if [ $hp_1020_detected -eq 0 ]; then
         log_info "未检测到 HP LaserJet 1020/1020plus"
         return 1
     fi
@@ -330,6 +330,4 @@ main() {
 }
 
 # 如果直接运行此脚本
-if [ "${BASH_SOURCE[0]}" == "${0}" ]; then
-    main "$@"
-fi
+main "$@"
