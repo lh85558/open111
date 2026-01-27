@@ -176,7 +176,16 @@ start_build() {
     # 清理之前的构建
     make clean
     
-    # 开始编译
+    # 首先构建工具链，使用较少的并行度以避免资源竞争
+    log_info "构建工具链..."
+    make tools/compile -j2 V=s
+    if [ $? -ne 0 ]; then
+        log_error "工具链构建失败"
+        exit 1
+    fi
+    
+    # 构建工具链完成后，再构建完整固件
+    log_info "构建完整固件..."
     make -j$(nproc) V=s
     
     cd ..
