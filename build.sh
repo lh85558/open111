@@ -139,9 +139,28 @@ apply_patches() {
     
     cd openwrt
     
-    # 应用定时重启补丁
-    if [ -f "../patches/auto-reboot.patch" ]; then
-        patch -p1 < ../patches/auto-reboot.patch
+    # 1. 修改 boot 文件，添加定时重启
+    if [ -f "package/base-files/files/etc/init.d/boot" ]; then
+        if ! grep -q "THDN-PrintServer: 设置定时重启" package/base-files/files/etc/init.d/boot; then
+            sed -i '/touch \/tmp\/resolv.conf.auto/a \
+\t# THDN-PrintServer: 设置定时重启\n\techo "0 4 * * * /sbin/reboot" >> /etc/crontabs/root\n\t/etc/init.d/cron enable\n\t/etc/init.d/cron start' package/base-files/files/etc/init.d/boot
+        fi
+    fi
+    
+    # 2. 修改 banner 文件
+    if [ -f "package/base-files/files/etc/banner" ]; then
+        sed -i 's/ CHAOS CALMER (Chaos Calmer, r4937)/ THDN-PrintServer OpenWrt17 (Build %C)\n 基于 OpenWrt 17.01.7 稳定版\n 集成 CUPS 打印服务\n 支持 HP LaserJet 1020\/1020plus/' package/base-files/files/etc/banner
+    fi
+    
+    # 3. 修改 system 配置
+    if [ -f "package/base-files/files/etc/config/system" ]; then
+        sed -i 's/option hostname\t\tOpenWrt/option hostname\t\tTHDN-PrintServer/' package/base-files/files/etc/config/system
+        sed -i 's/option ttylogin\t\t1/option ttylogin\t\t0/' package/base-files/files/etc/config/system
+    fi
+    
+    # 4. 修改 network 配置
+    if [ -f "package/base-files/files/etc/config/network" ]; then
+        sed -i 's/option ipaddr\t\t192.168.1.1/option ipaddr\t\t192.168.10.1/' package/base-files/files/etc/config/network
     fi
     
     cd ..
