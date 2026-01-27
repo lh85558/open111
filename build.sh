@@ -176,9 +176,24 @@ start_build() {
     # 清理之前的构建
     make clean
     
-    # 首先构建工具链，使用较少的并行度以避免资源竞争
-    log_info "构建工具链..."
-    make tools/compile -j2 V=s
+    # 设置构建参数
+    export MAKEFLAGS="-j2"
+    export FORCE_UNSAFE_CONFIGURE=1
+    
+    # 尝试逐个构建工具，以提高稳定性
+    log_info "构建工具..."
+    
+    # 构建 pkg-config
+    log_info "构建 pkg-config..."
+    make tools/pkg-config/compile V=s
+    if [ $? -ne 0 ]; then
+        log_error "pkg-config 构建失败"
+        exit 1
+    fi
+    
+    # 构建其他工具
+    log_info "构建其他工具..."
+    make tools/compile V=s
     if [ $? -ne 0 ]; then
         log_error "工具链构建失败"
         exit 1
