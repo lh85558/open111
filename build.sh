@@ -64,14 +64,14 @@ install_dependencies() {
     sudo apt install -y \
         build-essential ccache ecj fastjar file g++ gawk \
         gettext git java-propose-classpath libelf-dev libncurses5-dev \
-        libncursesw5-dev libssl-dev python python2.7-dev python3 \
+        libncursesw5-dev libssl-dev python2.7-dev python3 \
         unzip wget python3-distutils python3-setuptools python3-dev \
         rsync subversion swig time xsltproc zlib1g-dev \
         libxml-parser-perl gcc-multilib flex git-core \
         libusb-dev libusb-1.0-0-dev uuid-dev libacl1-dev \
         liblzo2-dev liblzma-dev zlib1g-dev e2fsprogs \
         m4 pkg-config autoconf autoconf-archive autotools-dev \
-        libtool python3-pip
+        libtool python3-pip python-is-python3
     
     log_info "依赖安装完成"
 }
