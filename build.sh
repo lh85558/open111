@@ -176,9 +176,14 @@ start_build() {
     # 清理之前的构建
     make clean
     
-    # 设置构建参数
-    export MAKEFLAGS="-j2"
+    # 设置构建参数，禁用并行构建以避免资源竞争
+    export MAKEFLAGS="-j1"
     export FORCE_UNSAFE_CONFIGURE=1
+    export NINJAJOBS=1
+    
+    # 增加系统资源限制
+    ulimit -c unlimited
+    ulimit -n 4096
     
     # 尝试逐个构建工具，以提高稳定性
     log_info "构建工具..."
@@ -188,6 +193,14 @@ start_build() {
     make tools/pkg-config/compile V=s
     if [ $? -ne 0 ]; then
         log_error "pkg-config 构建失败"
+        exit 1
+    fi
+    
+    # 构建 mtools
+    log_info "构建 mtools..."
+    make tools/mtools/compile V=s
+    if [ $? -ne 0 ]; then
+        log_error "mtools 构建失败"
         exit 1
     fi
     
@@ -201,7 +214,7 @@ start_build() {
     
     # 构建工具链完成后，再构建完整固件
     log_info "构建完整固件..."
-    make -j$(nproc) V=s
+    make V=s
     
     cd ..
     log_info "编译完成"
