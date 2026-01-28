@@ -221,11 +221,15 @@ start_build() {
     
     # 首先构建 m4，因为它是其他工具的依赖
     log_info "构建 m4..."
+    # 为 m4 添加额外的编译参数以解决兼容性问题
+    export CFLAGS="-O2 -fno-stack-protector -U_FORTIFY_SOURCE"
+    export CXXFLAGS="-O2 -fno-stack-protector -U_FORTIFY_SOURCE"
     make tools/m4/compile V=s
     if [ $? -ne 0 ]; then
         log_error "m4 构建失败"
         exit 1
     fi
+    unset CFLAGS CXXFLAGS
     
     # 构建 pkg-config
     log_info "构建 pkg-config..."
