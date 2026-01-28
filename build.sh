@@ -219,6 +219,14 @@ start_build() {
     # 尝试逐个构建工具，以提高稳定性
     log_info "构建工具..."
     
+    # 首先构建 m4，因为它是其他工具的依赖
+    log_info "构建 m4..."
+    make tools/m4/compile V=s
+    if [ $? -ne 0 ]; then
+        log_error "m4 构建失败"
+        exit 1
+    fi
+    
     # 构建 pkg-config
     log_info "构建 pkg-config..."
     make tools/pkg-config/compile V=s
