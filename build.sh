@@ -229,7 +229,7 @@ start_build() {
             cp tools/m4/Makefile tools/m4/Makefile.backup
             # 修改 Makefile，使其立即返回成功
             # 使用 printf 来确保正确的 tab 缩进
-            printf '# Modified Makefile to skip m4 build and use system m4\ninclude $(TOPDIR)/rules.mk\n\nPKG_NAME:=m4\nPKG_VERSION:=1.4.18\n\ninclude $(INCLUDE_DIR)/host-build.mk\n\ndefine Host/Prepare\n\tmkdir -p $(HOST_BUILD_DIR)\n\ttouch $(HOST_BUILD_DIR)/.prepared\nendef\n\ndefine Host/Configure\n\ttouch $(HOST_BUILD_DIR)/.configured\nendef\n\ndefine Host/Compile\n\ttouch $(HOST_BUILD_DIR)/.built\nendef\n\ndefine Host/Clean\n\trm -rf $(HOST_BUILD_DIR)\nendef\n\n$(eval $(call HostBuild))\n' > tools/m4/Makefile
+            printf '# Modified Makefile to skip m4 build and use system m4\ninclude $(TOPDIR)/rules.mk\n\nPKG_NAME:=m4\nPKG_VERSION:=1.4.18\n\ninclude $(INCLUDE_DIR)/host-build.mk\n\ndefine Host/Prepare\n\tmkdir -p $(HOST_BUILD_DIR)\n\ttouch $(HOST_BUILD_DIR)/.prepared\nendef\n\ndefine Host/Configure\n\ttouch $(HOST_BUILD_DIR)/.configured\nendef\n\ndefine Host/Compile\n\ttouch $(HOST_BUILD_DIR)/.built\nendef\n\ndefine Host/Install\n\tmkdir -p $(STAGING_DIR_HOST)/bin\n\tln -sf /usr/bin/m4 $(STAGING_DIR_HOST)/bin/m4\n\ttouch $(STAGING_DIR_HOST)/stamp/.m4_installed\nendef\n\ndefine Host/Clean\n\trm -rf $(HOST_BUILD_DIR)\nendef\n\n$(eval $(call HostBuild))\n' > tools/m4/Makefile
             log_info "已修改 tools/m4/Makefile 以跳过构建"
         fi
         
