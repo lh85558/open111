@@ -223,21 +223,33 @@ start_build() {
     log_info "检查系统 m4 工具..."
     if command -v m4 > /dev/null; then
         log_info "系统已安装 m4，尝试跳过构建..."
-        # 方法1：修改 Makefile 来禁用 m4 工具
-        if [ -f "tools/m4/Makefile" ]; then
-            # 备份原始 Makefile
-            cp tools/m4/Makefile tools/m4/Makefile.backup
-            # 修改 Makefile，使其立即返回成功
-            # 使用 printf 来确保正确的 tab 缩进
-            printf '# Modified Makefile to skip m4 build and use system m4\ninclude $(TOPDIR)/rules.mk\n\nPKG_NAME:=m4\nPKG_VERSION:=1.4.18\n\ninclude $(INCLUDE_DIR)/host-build.mk\n\ndefine Host/Prepare\n\tmkdir -p $(HOST_BUILD_DIR)\n\ttouch $(HOST_BUILD_DIR)/.prepared\nendef\n\ndefine Host/Configure\n\ttouch $(HOST_BUILD_DIR)/.configured\nendef\n\ndefine Host/Compile\n\ttouch $(HOST_BUILD_DIR)/.built\nendef\n\ndefine Host/Install\n\tmkdir -p $(STAGING_DIR_HOST)/bin\n\tln -sf /usr/bin/m4 $(STAGING_DIR_HOST)/bin/m4\n\ttouch $(STAGING_DIR_HOST)/stamp/.m4_installed\nendef\n\ndefine Host/Clean\n\trm -rf $(HOST_BUILD_DIR)\nendef\n\n$(eval $(call HostBuild))\n' > tools/m4/Makefile
-            log_info "已修改 tools/m4/Makefile 以跳过构建"
-        fi
         
-        # 方法2：创建 m4 构建的标记文件
+        # 方法1：直接创建必要的目录和文件，绕过构建系统
         mkdir -p build_dir/host/m4-1.4.18
         touch build_dir/host/m4-1.4.18/.built
         touch build_dir/host/m4-1.4.18/.configured
         touch build_dir/host/m4-1.4.18/.prepared
+        
+        # 创建 staging 目录并链接系统 m4
+        mkdir -p staging_dir/host/bin
+        ln -sf /usr/bin/m4 staging_dir/host/bin/m4
+        
+        # 创建安装标记文件
+        mkdir -p staging_dir/host/stamp
+        touch staging_dir/host/stamp/.m4_installed
+        
+        # 方法2：修改 tools/Makefile，移除 m4 依赖
+        if [ -f "tools/Makefile" ]; then
+            # 备份原始 Makefile
+            cp tools/Makefile tools/Makefile.backup
+            # 修改 tools/Makefile，移除 m4 相关规则
+            sed -i '/^tools\/m4\/compile:/d' tools/Makefile
+            sed -i '/^tools\/m4\/install:/d' tools/Makefile
+            sed -i '/^tools\/m4\/clean:/d' tools/Makefile
+            sed -i '/\$(STAGING_DIR_HOST)\/stamp\/.m4_installed:/d' tools/Makefile
+            log_info "已修改 tools/Makefile 以移除 m4 依赖"
+        fi
+        
         log_info "已跳过 m4 构建，使用系统 m4"
     else
         log_warn "系统未安装 m4，尝试构建..."
