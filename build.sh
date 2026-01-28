@@ -94,7 +94,38 @@ clone_openwrt() {
     
     # 更新和安装 feeds
     log_info "更新 feeds..."
-    ./scripts/feeds update -a
+    
+    # 添加重试机制，最多重试 3 次
+    local max_retries=3
+    local retry=0
+    local success=0
+    
+    while [ $retry -lt $max_retries ]; do
+        log_info "尝试更新 feeds (第 $((retry+1)) 次)..."
+        # 使用 --timeout 选项设置超时，避免长时间卡住
+        timeout 300 ./scripts/feeds update -a
+        if [ $? -eq 0 ]; then
+            success=1
+            break
+        else
+            log_warn "feeds 更新失败，$((max_retries - retry - 1)) 次重试机会..."
+            retry=$((retry + 1))
+            sleep 10
+        fi
+    done
+    
+    if [ $success -eq 0 ]; then
+        log_error "feeds 更新失败，尝试使用备用方法..."
+        # 尝试单独更新核心 feeds，跳过可能有问题的 routing feed
+        timeout 120 ./scripts/feeds update packages luci
+        if [ $? -ne 0 ]; then
+            log_error "核心 feeds 更新也失败，构建无法继续"
+            exit 1
+        fi
+    fi
+    
+    # 安装 feeds
+    log_info "安装 feeds..."
     ./scripts/feeds install -a
     
     cd ..
