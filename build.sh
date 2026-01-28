@@ -223,7 +223,43 @@ start_build() {
     log_info "检查系统 m4 工具..."
     if command -v m4 > /dev/null; then
         log_info "系统已安装 m4，尝试跳过构建..."
-        # 创建 m4 构建的标记文件，欺骗构建系统认为 m4 已经构建完成
+        # 方法1：修改 Makefile 来禁用 m4 工具
+        if [ -f "tools/m4/Makefile" ]; then
+            # 备份原始 Makefile
+            cp tools/m4/Makefile tools/m4/Makefile.backup
+            # 修改 Makefile，使其立即返回成功
+            cat > tools/m4/Makefile << 'EOF'
+# Modified Makefile to skip m4 build and use system m4
+include $(TOPDIR)/rules.mk
+
+PKG_NAME:=m4
+PKG_VERSION:=1.4.18
+
+include $(INCLUDE_DIR)/host-build.mk
+
+define Host/Prepare
+    mkdir -p $(HOST_BUILD_DIR)
+    touch $(HOST_BUILD_DIR)/.prepared
+endef
+
+define Host/Configure
+    touch $(HOST_BUILD_DIR)/.configured
+endef
+
+define Host/Compile
+    touch $(HOST_BUILD_DIR)/.built
+endef
+
+define Host/Clean
+    rm -rf $(HOST_BUILD_DIR)
+endef
+
+$(eval $(call HostBuild))
+EOF
+            log_info "已修改 tools/m4/Makefile 以跳过构建"
+        fi
+        
+        # 方法2：创建 m4 构建的标记文件
         mkdir -p build_dir/host/m4-1.4.18
         touch build_dir/host/m4-1.4.18/.built
         touch build_dir/host/m4-1.4.18/.configured
