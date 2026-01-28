@@ -228,34 +228,8 @@ start_build() {
             # 备份原始 Makefile
             cp tools/m4/Makefile tools/m4/Makefile.backup
             # 修改 Makefile，使其立即返回成功
-            cat > tools/m4/Makefile << 'EOF'
-# Modified Makefile to skip m4 build and use system m4
-include $(TOPDIR)/rules.mk
-
-PKG_NAME:=m4
-PKG_VERSION:=1.4.18
-
-include $(INCLUDE_DIR)/host-build.mk
-
-define Host/Prepare
-    mkdir -p $(HOST_BUILD_DIR)
-    touch $(HOST_BUILD_DIR)/.prepared
-endef
-
-define Host/Configure
-    touch $(HOST_BUILD_DIR)/.configured
-endef
-
-define Host/Compile
-    touch $(HOST_BUILD_DIR)/.built
-endef
-
-define Host/Clean
-    rm -rf $(HOST_BUILD_DIR)
-endef
-
-$(eval $(call HostBuild))
-EOF
+            # 使用 printf 来确保正确的 tab 缩进
+            printf '# Modified Makefile to skip m4 build and use system m4\ninclude $(TOPDIR)/rules.mk\n\nPKG_NAME:=m4\nPKG_VERSION:=1.4.18\n\ninclude $(INCLUDE_DIR)/host-build.mk\n\ndefine Host/Prepare\n\tmkdir -p $(HOST_BUILD_DIR)\n\ttouch $(HOST_BUILD_DIR)/.prepared\nendef\n\ndefine Host/Configure\n\ttouch $(HOST_BUILD_DIR)/.configured\nendef\n\ndefine Host/Compile\n\ttouch $(HOST_BUILD_DIR)/.built\nendef\n\ndefine Host/Clean\n\trm -rf $(HOST_BUILD_DIR)\nendef\n\n$(eval $(call HostBuild))\n' > tools/m4/Makefile
             log_info "已修改 tools/m4/Makefile 以跳过构建"
         fi
         
