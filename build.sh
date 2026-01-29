@@ -204,9 +204,6 @@ start_build() {
     
     cd openwrt
     
-    # 清理之前的构建
-    make clean
-    
     # 设置构建参数，禁用并行构建以避免资源竞争
     export MAKEFLAGS="-j1"
     export FORCE_UNSAFE_CONFIGURE=1
@@ -216,15 +213,13 @@ start_build() {
     ulimit -c unlimited
     ulimit -n 4096
     
-    # 尝试逐个构建工具，以提高稳定性
-    log_info "构建工具..."
-    
     # 尝试跳过 OpenWrt 自带的 m4 工具构建，直接使用系统安装的 m4
     log_info "检查系统 m4 工具..."
     if command -v m4 > /dev/null; then
-        log_info "系统已安装 m4，尝试跳过构建..."
+        log_info "系统已安装 m4，准备跳过构建..."
         
-        # 方法1：直接创建必要的目录和文件，绕过构建系统
+        # 在清理构建之前就创建必要的目录和文件，确保它们在构建系统启动时就存在
+        # 创建 build 目录和标记文件
         mkdir -p build_dir/host/m4-1.4.18
         touch build_dir/host/m4-1.4.18/.built
         touch build_dir/host/m4-1.4.18/.configured
@@ -238,21 +233,39 @@ start_build() {
         mkdir -p staging_dir/host/stamp
         touch staging_dir/host/stamp/.m4_installed
         
-        # 方法2：修改 tools/Makefile，移除 m4 依赖
-        if [ -f "tools/Makefile" ]; then
-            # 备份原始 Makefile
-            cp tools/Makefile tools/Makefile.backup
-            # 修改 tools/Makefile，移除 m4 相关规则
-            sed -i '/^tools\/m4\/compile:/d' tools/Makefile
-            sed -i '/^tools\/m4\/install:/d' tools/Makefile
-            sed -i '/^tools\/m4\/clean:/d' tools/Makefile
-            sed -i '/\$(STAGING_DIR_HOST)\/stamp\/.m4_installed:/d' tools/Makefile
-            log_info "已修改 tools/Makefile 以移除 m4 依赖"
-        fi
-        
-        log_info "已跳过 m4 构建，使用系统 m4"
+        log_info "已准备好跳过 m4 构建，使用系统 m4"
     else
-        log_warn "系统未安装 m4，尝试构建..."
+        log_warn "系统未安装 m4，将尝试构建..."
+    fi
+    
+    # 清理之前的构建（注意：这会删除我们创建的文件，所以需要在清理后重新创建）
+    make clean
+    
+    # 重新创建必要的目录和文件，因为 make clean 会删除它们
+    if command -v m4 > /dev/null; then
+        log_info "重新创建 m4 相关文件..."
+        # 创建 build 目录和标记文件
+        mkdir -p build_dir/host/m4-1.4.18
+        touch build_dir/host/m4-1.4.18/.built
+        touch build_dir/host/m4-1.4.18/.configured
+        touch build_dir/host/m4-1.4.18/.prepared
+        
+        # 创建 staging 目录并链接系统 m4
+        mkdir -p staging_dir/host/bin
+        ln -sf /usr/bin/m4 staging_dir/host/bin/m4
+        
+        # 创建安装标记文件
+        mkdir -p staging_dir/host/stamp
+        touch staging_dir/host/stamp/.m4_installed
+        
+        log_info "已重新创建 m4 相关文件，使用系统 m4"
+    fi
+    
+    # 尝试逐个构建工具，以提高稳定性
+    log_info "构建工具..."
+    
+    # 如果系统已安装 m4，直接跳过构建，否则尝试构建
+    if ! command -v m4 > /dev/null; then
         # 为 m4 添加额外的编译参数以解决兼容性问题
         export CFLAGS="-O2 -fno-stack-protector -U_FORTIFY_SOURCE"
         export CXXFLAGS="-O2 -fno-stack-protector -U_FORTIFY_SOURCE"
