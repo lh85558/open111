@@ -92,6 +92,28 @@ clone_openwrt() {
         git checkout v17.01.7
     fi
     
+    # 检查并修改 tools/Makefile 文件，移除 m4 相关的构建规则
+    if [ -f "tools/Makefile" ]; then
+        log_info "修改 tools/Makefile 文件，移除 m4 相关的构建规则..."
+        # 备份原始 Makefile
+        cp tools/Makefile tools/Makefile.backup
+        # 使用 sed 命令删除 m4 相关的构建规则
+        sed -i '/^tools\/m4\/compile:/d' tools/Makefile
+        sed -i '/^tools\/m4\/install:/d' tools/Makefile
+        sed -i '/^tools\/m4\/clean:/d' tools/Makefile
+        sed -i '/\$(STAGING_DIR_HOST)\/stamp\/.m4_installed:/d' tools/Makefile
+        # 从编译列表中移除 m4
+        sed -i 's/\btools\/m4\/compile\b//g' tools/Makefile
+        sed -i 's/\btools\/m4\/install\b//g' tools/Makefile
+        # 移除多余的空格
+        sed -i 's/\s\+/ /g' tools/Makefile
+        sed -i 's/^\s*//g' tools/Makefile
+        sed -i 's/\s*$/\n/g' tools/Makefile
+        log_info "已修改 tools/Makefile 文件，移除 m4 相关的构建规则"
+    else
+        log_warn "tools/Makefile 文件不存在，跳过修改"
+    fi
+    
     # 更新和安装 feeds
     log_info "更新 feeds..."
     
