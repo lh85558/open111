@@ -143,8 +143,8 @@ clone_openwrt() {
     
     while [ $retry -lt $max_retries ]; do
         log_info "尝试更新 feeds (第 $((retry+1)) 次)..."
-        # 跳过 telephony feed，避免与 yate 包相关的错误
-        timeout 300 ./scripts/feeds update packages luci routing
+        # 只更新核心 feeds，跳过 telephony 和 routing feed，避免相关错误
+        timeout 300 ./scripts/feeds update packages luci
         if [ $? -eq 0 ]; then
             success=1
             break
@@ -158,18 +158,17 @@ clone_openwrt() {
     if [ $success -eq 0 ]; then
         log_error "feeds 更新失败，尝试使用备用方法..."
         # 只更新核心 feeds
-        timeout 120 ./scripts/feeds update packages luci
+        timeout 120 ./scripts/feeds update packages
         if [ $? -ne 0 ]; then
             log_error "核心 feeds 更新也失败，构建无法继续"
             exit 1
         fi
     fi
     
-    # 安装 feeds，跳过 telephony feed
+    # 安装 feeds，只安装核心 feeds
     log_info "安装 feeds..."
     ./scripts/feeds install -a -p packages
     ./scripts/feeds install -a -p luci
-    ./scripts/feeds install -a -p routing
     
     cd ..
     log_info "OpenWrt 源码准备完成"
