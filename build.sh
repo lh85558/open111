@@ -350,33 +350,19 @@ start_build() {
         exit 1
     fi
     
-    # 构建其他工具，使用 -k 参数允许部分失败，确保即使某些工具构建失败也能继续
-    log_info "构建其他工具..."
-    make tools/compile V=s -k
+    # 直接构建 squashfs4 工具，确保固件打包所需的工具可用
+    log_info "构建 squashfs4 工具..."
+    make tools/squashfs4/compile V=s
     if [ $? -ne 0 ]; then
-        # 检查是否有关键工具构建成功
-        local critical_tools=("pkg-config" "mtools" "squashfs4")
-        local all_critical_built=1
-        
-        for tool in "${critical_tools[@]}"; do
-            if [ ! -f "build_dir/host/${tool}/.built" ] && [ ! -f "build_dir/host/${tool}*/.built" ]; then
-                log_warn "关键工具 ${tool} 可能未构建成功"
-                all_critical_built=0
-            fi
-        done
-        
-        # 检查是否是因为 m4 构建失败导致的
-        if [ -f "staging_dir/host/bin/m4" ] || command -v m4 > /dev/null; then
-            log_warn "工具链构建过程中可能有非关键错误，但我们使用系统 m4，所以可以继续"
-        elif [ $all_critical_built -eq 0 ]; then
-            log_error "关键工具构建失败"
-            exit 1
-        else
-            log_warn "工具链构建过程中可能有非关键错误，但关键工具已构建成功，所以可以继续"
-        fi
+        log_error "squashfs4 构建失败"
+        exit 1
     fi
     
-    # 构建工具链完成后，再构建完整固件
+    # 跳过 tools/compile 目标，直接进入固件构建阶段
+    # 因为我们已经构建了所有关键工具（pkg-config、mtools、squashfs4）
+    log_info "跳过完整工具链构建，直接构建固件..."
+    
+    # 构建完整固件
     log_info "构建完整固件..."
     make V=s
     
