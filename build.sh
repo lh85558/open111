@@ -97,18 +97,37 @@ clone_openwrt() {
         log_info "修改 tools/Makefile 文件，移除 m4 相关的构建规则..."
         # 备份原始 Makefile
         cp tools/Makefile tools/Makefile.backup
-        # 使用 sed 命令删除 m4 相关的构建规则
-        sed -i '/^tools\/m4\/compile:/d' tools/Makefile
-        sed -i '/^tools\/m4\/install:/d' tools/Makefile
-        sed -i '/^tools\/m4\/clean:/d' tools/Makefile
-        sed -i '/\$(STAGING_DIR_HOST)\/stamp\/.m4_installed:/d' tools/Makefile
-        # 从编译列表中移除 m4
-        sed -i 's/\btools\/m4\/compile\b//g' tools/Makefile
-        sed -i 's/\btools\/m4\/install\b//g' tools/Makefile
-        # 移除多余的空格
-        sed -i 's/\s\+/ /g' tools/Makefile
-        sed -i 's/^\s*//g' tools/Makefile
-        sed -i 's/\s*$/\n/g' tools/Makefile
+        
+        # 使用更安全的方法修改 Makefile，避免破坏语法结构
+        # 使用 awk 一次性处理所有修改，保持 Makefile 语法完整
+        awk '{
+            # 跳过 m4 相关的规则定义
+            if ($0 ~ /^tools\/m4\/(compile|install|clean):/) {
+                next
+            }
+            # 跳过 m4 安装标记文件的规则
+            if ($0 ~ /\$(STAGING_DIR_HOST)\/stamp\/.m4_installed:/) {
+                next
+            }
+            # 移除编译列表中的 m4 相关目标
+            if ($0 ~ /tools\/m4\/(compile|install)/) {
+                # 替换包含 m4 目标的行，保持其他目标不变
+                gsub(/tools\/m4\/compile\s+/, "")
+                gsub(/\s+tools\/m4\/compile/, "")
+                gsub(/tools\/m4\/install\s+/, "")
+                gsub(/\s+tools\/m4\/install/, "")
+                # 如果行变为空，跳过
+                if ($0 == "") {
+                    next
+                }
+            }
+            # 打印处理后的行
+            print
+        }' tools/Makefile > tools/Makefile.new
+        
+        # 替换原始文件
+        mv tools/Makefile.new tools/Makefile
+        
         log_info "已修改 tools/Makefile 文件，移除 m4 相关的构建规则"
     else
         log_warn "tools/Makefile 文件不存在，跳过修改"
