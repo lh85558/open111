@@ -344,6 +344,69 @@ start_build() {
             chmod 644 staging_dir/host/stamp/* 2>/dev/null || true
         done
         
+        # 直接修改 tools/m4/Makefile，使其直接使用系统 m4 而不是尝试构建
+        if [ -f "tools/m4/Makefile" ]; then
+            log_info "修改 tools/m4/Makefile 文件，使其直接使用系统 m4..."
+            # 备份原始 Makefile
+            cp tools/m4/Makefile tools/m4/Makefile.backup
+            
+            # 创建一个新的 Makefile，直接使用系统 m4
+            cat > tools/m4/Makefile << 'EOF'
+#
+# Copyright (C) 2006-2015 OpenWrt.org
+#
+# This is free software, licensed under the GNU General Public License v2.
+# See /LICENSE for more information.
+#
+
+include $(TOPDIR)/rules.mk
+
+PKG_NAME:=m4
+PKG_VERSION:=1.4.18
+PKG_RELEASE:=1
+
+PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+PKG_SOURCE_URL:=@GNU/m4
+PKG_HASH:=ab2633921a5cd38e48797bf5521ad259bdc4b9790b38a06139d63993579c69c7
+
+HOST_BUILD_PARALLEL:=1
+
+include $(INCLUDE_DIR)/host-build.mk
+
+# 直接使用系统 m4，跳过构建
+define Host/Compile
+	# 使用系统 m4，不进行构建
+	true
+endef
+
+define Host/Install
+	# 使用系统 m4，不进行安装
+	true
+endef
+
+$(STAGING_DIR_HOST)/stamp/.m4_installed: $(HOST_BUILD_DIR)/.built
+	# 直接标记为已安装
+	touch $@
+
+$(HOST_BUILD_DIR)/.built:
+	# 直接标记为已构建
+	touch $@
+
+$(HOST_BUILD_DIR)/.configured:
+	# 直接标记为已配置
+	touch $@
+
+$(HOST_BUILD_DIR)/.prepared:
+	# 直接标记为已准备
+	touch $@
+
+endef
+
+EOF
+            
+            log_info "已修改 tools/m4/Makefile 文件，使其直接使用系统 m4"
+        fi
+        
         # 验证系统 m4 是否可用
         if [ -f "staging_dir/host/bin/m4" ]; then
             log_info "系统 m4 已成功链接到 staging 目录"
