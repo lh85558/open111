@@ -143,30 +143,54 @@ clone_openwrt() {
     # 更新和安装 feeds
     log_info "更新 feeds..."
     
-    # 添加重试机制，最多重试 3 次
-    local max_retries=3
+    # 添加重试机制，最多重试 5 次，每次等待时间递增
+    local max_retries=5
     local retry=0
     local success=0
     
     while [ $retry -lt $max_retries ]; do
-        log_info "尝试更新 feeds (第 $((retry+1)) 次)..."
+        log_info "尝试更新 feeds (第 $((retry+1)) 次，最多 $max_retries 次)..."
         # 只更新核心 feeds，跳过 telephony 和 routing feed，避免相关错误
-        timeout 300 ./scripts/feeds update packages luci
-        if [ $? -eq 0 ]; then
+        # 增加超时时间到 600 秒，避免长时间卡住
+        timeout 600 ./scripts/feeds update packages luci
+        local exit_code=$?
+        
+        if [ $exit_code -eq 0 ]; then
             success=1
+            log_info "feeds 更新成功"
             break
+        elif [ $exit_code -eq 124 ]; then
+            # 超时错误
+            log_warn "feeds 更新超时，$((max_retries - retry - 1)) 次重试机会..."
         else
-            log_warn "feeds 更新失败，$((max_retries - retry - 1)) 次重试机会..."
-            retry=$((retry + 1))
-            sleep 10
+            # 其他错误
+            log_warn "feeds 更新失败 (退出码: $exit_code)，$((max_retries - retry - 1)) 次重试机会..."
         fi
+        
+        retry=$((retry + 1))
+        
+        # 递增等待时间，从 10 秒开始，每次增加 10 秒
+        local wait_time=$((10 + retry * 10))
+        log_info "等待 $wait_time 秒后重试..."
+        sleep $wait_time
     done
     
     if [ $success -eq 0 ]; then
         log_error "feeds 更新失败，尝试使用备用方法..."
-        # 只更新核心 feeds
-        timeout 120 ./scripts/feeds update packages
-        if [ $? -ne 0 ]; then
+        # 尝试单独更新每个 feed，增加成功率
+        log_info "尝试单独更新 packages feed..."
+        timeout 300 ./scripts/feeds update packages
+        if [ $? -eq 0 ]; then
+            log_info "packages feed 更新成功"
+            
+            log_info "尝试单独更新 luci feed..."
+            timeout 300 ./scripts/feeds update luci
+            if [ $? -eq 0 ]; then
+                log_info "luci feed 更新成功"
+            else
+                log_warn "luci feed 更新失败，但将继续构建"
+            fi
+        else
             log_error "核心 feeds 更新也失败，构建无法继续"
             exit 1
         fi
