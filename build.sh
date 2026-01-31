@@ -143,6 +143,14 @@ clone_openwrt() {
     # 更新和安装 feeds
     log_info "更新 feeds..."
     
+    # 优化 Git 配置，增加缓冲区大小，使用 HTTP/1.1 以提高稳定性
+    log_info "优化 Git 配置以提高网络传输稳定性..."
+    git config --global http.postBuffer 524288000  # 500MB
+    git config --global http.maxRequestBuffer 1048576000  # 1GB
+    git config --global http.version HTTP/1.1  # 使用 HTTP/1.1 而不是 HTTP/2
+    git config --global http.lowSpeedLimit 0
+    git config --global http.lowSpeedTime 999999
+    
     # 添加重试机制，最多重试 5 次，每次等待时间递增
     local max_retries=5
     local retry=0
