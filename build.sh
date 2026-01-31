@@ -306,22 +306,45 @@ start_build() {
     # 尝试逐个构建工具，以提高稳定性
     log_info "构建工具..."
     
-    # 确保 m4 相关的标记文件存在，防止构建系统尝试构建 m4
+    # 强制使用系统 m4，确保在整个构建过程中都不会尝试构建 OpenWrt 自带的 m4
     if command -v m4 > /dev/null; then
-        log_info "确保 m4 标记文件存在..."
-        # 再次创建必要的目录和文件，确保构建系统不会尝试构建 m4
-        mkdir -p build_dir/host/m4-1.4.18
-        touch build_dir/host/m4-1.4.18/.built
-        touch build_dir/host/m4-1.4.18/.configured
-        touch build_dir/host/m4-1.4.18/.prepared
+        log_info "强制使用系统 m4，跳过 OpenWrt m4 构建..."
         
-        mkdir -p staging_dir/host/bin
-        ln -sf /usr/bin/m4 staging_dir/host/bin/m4 2>/dev/null || true
+        # 多次创建必要的目录和文件，确保构建系统不会尝试构建 m4
+        for i in {1..3}; do
+            # 创建 build 目录和标记文件
+            mkdir -p build_dir/host/m4-1.4.18
+            touch build_dir/host/m4-1.4.18/.built
+            touch build_dir/host/m4-1.4.18/.configured
+            touch build_dir/host/m4-1.4.18/.prepared
+            
+            # 创建 staging 目录并链接系统 m4
+            mkdir -p staging_dir/host/bin
+            # 先删除可能存在的链接，然后重新创建
+            rm -f staging_dir/host/bin/m4 2>/dev/null || true
+            ln -sf /usr/bin/m4 staging_dir/host/bin/m4 2>/dev/null || true
+            
+            # 创建安装标记文件
+            mkdir -p staging_dir/host/stamp
+            touch staging_dir/host/stamp/.m4_installed
+            
+            # 确保文件权限正确
+            chmod 755 build_dir/host/m4-1.4.18 2>/dev/null || true
+            chmod 644 build_dir/host/m4-1.4.18/* 2>/dev/null || true
+            chmod 755 staging_dir/host/bin 2>/dev/null || true
+            chmod 755 staging_dir/host/bin/m4 2>/dev/null || true
+            chmod 755 staging_dir/host/stamp 2>/dev/null || true
+            chmod 644 staging_dir/host/stamp/* 2>/dev/null || true
+        done
         
-        mkdir -p staging_dir/host/stamp
-        touch staging_dir/host/stamp/.m4_installed
+        # 验证系统 m4 是否可用
+        if [ -f "staging_dir/host/bin/m4" ]; then
+            log_info "系统 m4 已成功链接到 staging 目录"
+        else
+            log_warn "无法创建 m4 链接，但将继续使用系统 m4"
+        fi
         
-        log_info "m4 标记文件已确保存在，将跳过 m4 构建"
+        log_info "已强制配置使用系统 m4，构建系统将跳过 m4 构建"
     else
         # 为 m4 添加额外的编译参数以解决兼容性问题
         export CFLAGS="-O2 -fno-stack-protector -U_FORTIFY_SOURCE"
@@ -361,6 +384,25 @@ start_build() {
     # 跳过 tools/compile 目标，直接进入固件构建阶段
     # 因为我们已经构建了所有关键工具（pkg-config、mtools、squashfs4）
     log_info "跳过完整工具链构建，直接构建固件..."
+    
+    # 再次确保 m4 标记文件存在，防止构建系统在构建固件时尝试构建 m4
+    if command -v m4 > /dev/null; then
+        log_info "再次确保 m4 标记文件存在，防止构建系统在构建固件时尝试构建 m4..."
+        # 再次创建必要的目录和文件
+        mkdir -p build_dir/host/m4-1.4.18
+        touch build_dir/host/m4-1.4.18/.built
+        touch build_dir/host/m4-1.4.18/.configured
+        touch build_dir/host/m4-1.4.18/.prepared
+        
+        mkdir -p staging_dir/host/bin
+        rm -f staging_dir/host/bin/m4 2>/dev/null || true
+        ln -sf /usr/bin/m4 staging_dir/host/bin/m4 2>/dev/null || true
+        
+        mkdir -p staging_dir/host/stamp
+        touch staging_dir/host/stamp/.m4_installed
+        
+        log_info "m4 标记文件已再次确保存在，构建系统将在构建固件时跳过 m4 构建"
+    fi
     
     # 构建完整固件
     log_info "构建完整固件..."
