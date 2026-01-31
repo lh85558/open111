@@ -129,6 +129,13 @@ clone_openwrt() {
         mv tools/Makefile.new tools/Makefile
         
         log_info "已修改 tools/Makefile 文件，移除 m4 相关的构建规则"
+        
+        # 验证修改是否成功
+        if grep -q "tools/m4" tools/Makefile; then
+            log_warn "tools/Makefile 中仍然包含 m4 相关内容，可能需要手动检查"
+        else
+            log_info "tools/Makefile 修改验证成功，已移除所有 m4 相关内容"
+        fi
     else
         log_warn "tools/Makefile 文件不存在，跳过修改"
     fi
@@ -384,6 +391,52 @@ start_build() {
     # 跳过 tools/compile 目标，直接进入固件构建阶段
     # 因为我们已经构建了所有关键工具（pkg-config、mtools、squashfs4）
     log_info "跳过完整工具链构建，直接构建固件..."
+    
+    # 再次修改 tools/Makefile，确保在构建固件时不会尝试构建 m4
+    if [ -f "tools/Makefile" ]; then
+        log_info "再次修改 tools/Makefile 文件，确保在构建固件时不会尝试构建 m4..."
+        # 备份原始 Makefile
+        cp tools/Makefile tools/Makefile.backup2
+        
+        # 使用更安全的方法修改 Makefile，避免破坏语法结构
+        # 使用 awk 一次性处理所有修改，保持 Makefile 语法完整
+        awk '{
+            # 跳过 m4 相关的规则定义
+            if ($0 ~ /^tools\/m4\/(compile|install|clean):/) {
+                next
+            }
+            # 跳过 m4 安装标记文件的规则
+            if ($0 ~ /\$(STAGING_DIR_HOST)\/stamp\/.m4_installed:/) {
+                next
+            }
+            # 移除编译列表中的 m4 相关目标
+            if ($0 ~ /tools\/m4\/(compile|install)/) {
+                # 替换包含 m4 目标的行，保持其他目标不变
+                gsub(/tools\/m4\/compile\s+/, "")
+                gsub(/\s+tools\/m4\/compile/, "")
+                gsub(/tools\/m4\/install\s+/, "")
+                gsub(/\s+tools\/m4\/install/, "")
+                # 如果行变为空，跳过
+                if ($0 == "") {
+                    next
+                }
+            }
+            # 打印处理后的行
+            print
+        }' tools/Makefile > tools/Makefile.new
+        
+        # 替换原始文件
+        mv tools/Makefile.new tools/Makefile
+        
+        log_info "已再次修改 tools/Makefile 文件，移除 m4 相关的构建规则"
+        
+        # 验证修改是否成功
+        if grep -q "tools/m4" tools/Makefile; then
+            log_warn "tools/Makefile 中仍然包含 m4 相关内容，可能需要手动检查"
+        else
+            log_info "tools/Makefile 修改验证成功，已移除所有 m4 相关内容"
+        fi
+    fi
     
     # 再次确保 m4 标记文件存在，防止构建系统在构建固件时尝试构建 m4
     if command -v m4 > /dev/null; then
