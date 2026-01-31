@@ -92,6 +92,29 @@ clone_openwrt() {
         git checkout v17.01.7
     fi
     
+    # 修改 feeds.conf.default 文件，使用更稳定的源和减少克隆深度
+    if [ -f "feeds.conf.default" ]; then
+        log_info "修改 feeds.conf.default 文件，使用更稳定的源..."
+        # 备份原始文件
+        cp feeds.conf.default feeds.conf.default.backup
+        
+        # 创建新的 feeds.conf.default 文件，使用更稳定的源
+        cat > feeds.conf.default << 'EOF'
+#
+# This is the default feed configuration file.
+#
+# For more information, see feeds.conf(5).
+#
+
+src-git packages https://git.openwrt.org/feed/packages.git^545d2fadd7245783e40f235fe2c5d8c3ab1549cd
+src-git luci https://git.openwrt.org/project/luci.git^71e2af4f51567061600840040508d642120a8532
+EOF
+        
+        log_info "已修改 feeds.conf.default 文件，使用更稳定的源"
+    else
+        log_warn "feeds.conf.default 文件不存在，跳过修改"
+    fi
+    
     # 检查并修改 tools/Makefile 文件，移除 m4 相关的构建规则
     if [ -f "tools/Makefile" ]; then
         log_info "修改 tools/Makefile 文件，移除 m4 相关的构建规则..."
@@ -150,6 +173,11 @@ clone_openwrt() {
     git config --global http.version HTTP/1.1  # 使用 HTTP/1.1 而不是 HTTP/2
     git config --global http.lowSpeedLimit 0
     git config --global http.lowSpeedTime 999999
+    # 减少克隆深度，提高速度和稳定性
+    git config --global core.compression 0
+    git config --global pack.deltaCompression false
+    git config --global fetch.fsckObjects false
+    git config --global fetch.recurseSubmodules false
     
     # 添加重试机制，最多重试 5 次，每次等待时间递增
     local max_retries=5
@@ -160,8 +188,12 @@ clone_openwrt() {
         log_info "尝试更新 feeds (第 $((retry+1)) 次，最多 $max_retries 次)..."
         # 只更新核心 feeds，跳过 telephony 和 routing feed，避免相关错误
         # 增加超时时间到 600 秒，避免长时间卡住
+        # 为 git 操作添加深度限制，减少网络传输量
+        export GIT_SHALLOW_CLONE=1
+        export GIT_DEPTH=1
         timeout 600 ./scripts/feeds update packages luci
         local exit_code=$?
+        unset GIT_SHALLOW_CLONE GIT_DEPTH
         
         if [ $exit_code -eq 0 ]; then
             success=1
@@ -173,6 +205,8 @@ clone_openwrt() {
         else
             # 其他错误
             log_warn "feeds 更新失败 (退出码: $exit_code)，$((max_retries - retry - 1)) 次重试机会..."
+            # 清理失败的 feeds 目录，避免下次更新时出现问题
+            rm -rf ./feeds/packages ./feeds/luci 2>/dev/null || true
         fi
         
         retry=$((retry + 1))
@@ -187,13 +221,25 @@ clone_openwrt() {
         log_error "feeds 更新失败，尝试使用备用方法..."
         # 尝试单独更新每个 feed，增加成功率
         log_info "尝试单独更新 packages feed..."
+        export GIT_SHALLOW_CLONE=1
+        export GIT_DEPTH=1
+        rm -rf ./feeds/packages 2>/dev/null || true
         timeout 300 ./scripts/feeds update packages
-        if [ $? -eq 0 ]; then
+        local packages_exit_code=$?
+        unset GIT_SHALLOW_CLONE GIT_DEPTH
+        
+        if [ $packages_exit_code -eq 0 ]; then
             log_info "packages feed 更新成功"
             
             log_info "尝试单独更新 luci feed..."
+            export GIT_SHALLOW_CLONE=1
+            export GIT_DEPTH=1
+            rm -rf ./feeds/luci 2>/dev/null || true
             timeout 300 ./scripts/feeds update luci
-            if [ $? -eq 0 ]; then
+            local luci_exit_code=$?
+            unset GIT_SHALLOW_CLONE GIT_DEPTH
+            
+            if [ $luci_exit_code -eq 0 ]; then
                 log_info "luci feed 更新成功"
             else
                 log_warn "luci feed 更新失败，但将继续构建"
