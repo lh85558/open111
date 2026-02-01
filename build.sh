@@ -472,6 +472,18 @@ start_build() {
             log_info "已修改 tools/m4/Makefile 文件，使其直接使用系统 m4"
         fi
         
+        # 直接修改 tools/mklibs/Makefile，使其跳过构建
+        if [ -f "tools/mklibs/Makefile" ]; then
+            log_info "修改 tools/mklibs/Makefile 文件，使其跳过构建..."
+            # 备份原始 Makefile
+            cp tools/mklibs/Makefile tools/mklibs/Makefile.backup
+            
+            # 使用脚本创建新的 Makefile，确保 tab 字符正确
+            bash ../scripts/create-mklibs-makefile.sh
+            
+            log_info "已修改 tools/mklibs/Makefile 文件，使其跳过构建"
+        fi
+        
         # 验证系统 m4 是否可用
         if [ -f "staging_dir/host/bin/m4" ]; then
             log_info "系统 m4 已成功链接到 staging 目录"
