@@ -19,7 +19,7 @@ define Package/cups-config
   SECTION:=utils
   CATEGORY:=Utilities
   TITLE:=CUPS Configuration for THDN-PrintServer
-  DEPENDS:=+cups +cups-filters +hplip
+  DEPENDS:=+cups +cups-filters
 endef
 
 define Package/cups-config/description
