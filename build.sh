@@ -355,17 +355,23 @@ start_build() {
     ulimit -c unlimited
     ulimit -n 4096
     
-    # 尝试跳过 OpenWrt 自带的 m4 工具构建，直接使用系统安装的 m4
+    # 尝试跳过 OpenWrt 自带的 m4 和 mklibs 工具构建，直接使用系统安装的 m4
     log_info "检查系统 m4 工具..."
     if command -v m4 > /dev/null; then
         log_info "系统已安装 m4，准备跳过构建..."
         
         # 在清理构建之前就创建必要的目录和文件，确保它们在构建系统启动时就存在
-        # 创建 build 目录和标记文件
+        # 创建 m4 构建目录和标记文件
         mkdir -p build_dir/host/m4-1.4.18
         touch build_dir/host/m4-1.4.18/.built
         touch build_dir/host/m4-1.4.18/.configured
         touch build_dir/host/m4-1.4.18/.prepared
+        
+        # 创建 mklibs 构建目录和标记文件
+        mkdir -p build_dir/host/mklibs-0.1.35
+        touch build_dir/host/mklibs-0.1.35/.built
+        touch build_dir/host/mklibs-0.1.35/.configured
+        touch build_dir/host/mklibs-0.1.35/.prepared
         
         # 创建 staging 目录并链接系统 m4
         mkdir -p staging_dir/host/bin
@@ -374,8 +380,9 @@ start_build() {
         # 创建安装标记文件
         mkdir -p staging_dir/host/stamp
         touch staging_dir/host/stamp/.m4_installed
+        touch staging_dir/host/stamp/.mklibs_installed
         
-        log_info "已准备好跳过 m4 构建，使用系统 m4"
+        log_info "已准备好跳过 m4 和 mklibs 构建，使用系统 m4"
     else
         log_warn "系统未安装 m4，将尝试构建..."
     fi
@@ -385,12 +392,18 @@ start_build() {
     
     # 重新创建必要的目录和文件，因为 make clean 会删除它们
     if command -v m4 > /dev/null; then
-        log_info "重新创建 m4 相关文件..."
-        # 创建 build 目录和标记文件
+        log_info "重新创建 m4 和 mklibs 相关文件..."
+        # 创建 m4 构建目录和标记文件
         mkdir -p build_dir/host/m4-1.4.18
         touch build_dir/host/m4-1.4.18/.built
         touch build_dir/host/m4-1.4.18/.configured
         touch build_dir/host/m4-1.4.18/.prepared
+        
+        # 创建 mklibs 构建目录和标记文件
+        mkdir -p build_dir/host/mklibs-0.1.35
+        touch build_dir/host/mklibs-0.1.35/.built
+        touch build_dir/host/mklibs-0.1.35/.configured
+        touch build_dir/host/mklibs-0.1.35/.prepared
         
         # 创建 staging 目录并链接系统 m4
         mkdir -p staging_dir/host/bin
@@ -399,8 +412,9 @@ start_build() {
         # 创建安装标记文件
         mkdir -p staging_dir/host/stamp
         touch staging_dir/host/stamp/.m4_installed
+        touch staging_dir/host/stamp/.mklibs_installed
         
-        log_info "已重新创建 m4 相关文件，使用系统 m4"
+        log_info "已重新创建 m4 和 mklibs 相关文件，使用系统 m4"
     fi
     
     # 尝试逐个构建工具，以提高稳定性
@@ -410,13 +424,19 @@ start_build() {
     if command -v m4 > /dev/null; then
         log_info "强制使用系统 m4，跳过 OpenWrt m4 构建..."
         
-        # 多次创建必要的目录和文件，确保构建系统不会尝试构建 m4
+        # 多次创建必要的目录和文件，确保构建系统不会尝试构建 m4 和 mklibs
         for i in {1..3}; do
-            # 创建 build 目录和标记文件
+            # 创建 m4 构建目录和标记文件
             mkdir -p build_dir/host/m4-1.4.18
             touch build_dir/host/m4-1.4.18/.built
             touch build_dir/host/m4-1.4.18/.configured
             touch build_dir/host/m4-1.4.18/.prepared
+            
+            # 创建 mklibs 构建目录和标记文件
+            mkdir -p build_dir/host/mklibs-0.1.35
+            touch build_dir/host/mklibs-0.1.35/.built
+            touch build_dir/host/mklibs-0.1.35/.configured
+            touch build_dir/host/mklibs-0.1.35/.prepared
             
             # 创建 staging 目录并链接系统 m4
             mkdir -p staging_dir/host/bin
@@ -427,10 +447,13 @@ start_build() {
             # 创建安装标记文件
             mkdir -p staging_dir/host/stamp
             touch staging_dir/host/stamp/.m4_installed
+            touch staging_dir/host/stamp/.mklibs_installed
             
             # 确保文件权限正确
             chmod 755 build_dir/host/m4-1.4.18 2>/dev/null || true
             chmod 644 build_dir/host/m4-1.4.18/* 2>/dev/null || true
+            chmod 755 build_dir/host/mklibs-0.1.35 2>/dev/null || true
+            chmod 644 build_dir/host/mklibs-0.1.35/* 2>/dev/null || true
             chmod 755 staging_dir/host/bin 2>/dev/null || true
             chmod 755 staging_dir/host/bin/m4 2>/dev/null || true
             chmod 755 staging_dir/host/stamp 2>/dev/null || true
@@ -563,14 +586,20 @@ start_build() {
         fi
     fi
     
-    # 再次确保 m4 标记文件存在，防止构建系统在构建固件时尝试构建 m4
+    # 再次确保 m4 和 mklibs 标记文件存在，防止构建系统在构建固件时尝试构建它们
     if command -v m4 > /dev/null; then
-        log_info "再次确保 m4 标记文件存在，防止构建系统在构建固件时尝试构建 m4..."
-        # 再次创建必要的目录和文件
+        log_info "再次确保 m4 和 mklibs 标记文件存在，防止构建系统在构建固件时尝试构建它们..."
+        # 再次创建 m4 必要的目录和文件
         mkdir -p build_dir/host/m4-1.4.18
         touch build_dir/host/m4-1.4.18/.built
         touch build_dir/host/m4-1.4.18/.configured
         touch build_dir/host/m4-1.4.18/.prepared
+        
+        # 再次创建 mklibs 必要的目录和文件
+        mkdir -p build_dir/host/mklibs-0.1.35
+        touch build_dir/host/mklibs-0.1.35/.built
+        touch build_dir/host/mklibs-0.1.35/.configured
+        touch build_dir/host/mklibs-0.1.35/.prepared
         
         mkdir -p staging_dir/host/bin
         rm -f staging_dir/host/bin/m4 2>/dev/null || true
@@ -578,8 +607,9 @@ start_build() {
         
         mkdir -p staging_dir/host/stamp
         touch staging_dir/host/stamp/.m4_installed
+        touch staging_dir/host/stamp/.mklibs_installed
         
-        log_info "m4 标记文件已再次确保存在，构建系统将在构建固件时跳过 m4 构建"
+        log_info "m4 和 mklibs 标记文件已再次确保存在，构建系统将在构建固件时跳过它们的构建"
     fi
     
     # 构建完整固件
