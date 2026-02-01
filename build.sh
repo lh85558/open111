@@ -127,6 +127,14 @@ EOF
             if ($0 ~ /\$(STAGING_DIR_HOST)\/stamp\/.m4_installed:/) {
                 next
             }
+            # 跳过 mklibs 相关的规则定义
+            if ($0 ~ /^tools\/mklibs\/(compile|install|clean):/) {
+                next
+            }
+            # 跳过 mklibs 安装标记文件的规则
+            if ($0 ~ /\$(STAGING_DIR_HOST)\/stamp\/.mklibs_installed:/) {
+                next
+            }
             # 移除编译列表中的 m4 相关目标
             if ($0 ~ /tools\/m4\/(compile|install)/) {
                 # 替换包含 m4 目标的行，保持其他目标不变
@@ -139,6 +147,18 @@ EOF
                     next
                 }
             }
+            # 移除编译列表中的 mklibs 相关目标
+            if ($0 ~ /tools\/mklibs\/(compile|install)/) {
+                # 替换包含 mklibs 目标的行，保持其他目标不变
+                gsub(/tools\/mklibs\/compile\s+/, "")
+                gsub(/\s+tools\/mklibs\/compile/, "")
+                gsub(/tools\/mklibs\/install\s+/, "")
+                gsub(/\s+tools\/mklibs\/install/, "")
+                # 如果行变为空，跳过
+                if ($0 == "") {
+                    next
+                }
+            }
             # 打印处理后的行
             print
         }' tools/Makefile > tools/Makefile.new
@@ -146,13 +166,13 @@ EOF
         # 替换原始文件
         mv tools/Makefile.new tools/Makefile
         
-        log_info "已修改 tools/Makefile 文件，移除 m4 相关的构建规则"
+        log_info "已修改 tools/Makefile 文件，移除 m4 和 mklibs 相关的构建规则"
         
         # 验证修改是否成功
-        if grep -q "tools/m4" tools/Makefile; then
-            log_warn "tools/Makefile 中仍然包含 m4 相关内容，可能需要手动检查"
+        if grep -q "tools/m4\|tools/mklibs" tools/Makefile; then
+            log_warn "tools/Makefile 中仍然包含 m4 或 mklibs 相关内容，可能需要手动检查"
         else
-            log_info "tools/Makefile 修改验证成功，已移除所有 m4 相关内容"
+            log_info "tools/Makefile 修改验证成功，已移除所有 m4 和 mklibs 相关内容"
         fi
     else
         log_warn "tools/Makefile 文件不存在，跳过修改"
@@ -494,6 +514,14 @@ start_build() {
             if ($0 ~ /\$(STAGING_DIR_HOST)\/stamp\/.m4_installed:/) {
                 next
             }
+            # 跳过 mklibs 相关的规则定义
+            if ($0 ~ /^tools\/mklibs\/(compile|install|clean):/) {
+                next
+            }
+            # 跳过 mklibs 安装标记文件的规则
+            if ($0 ~ /\$(STAGING_DIR_HOST)\/stamp\/.mklibs_installed:/) {
+                next
+            }
             # 移除编译列表中的 m4 相关目标
             if ($0 ~ /tools\/m4\/(compile|install)/) {
                 # 替换包含 m4 目标的行，保持其他目标不变
@@ -506,6 +534,18 @@ start_build() {
                     next
                 }
             }
+            # 移除编译列表中的 mklibs 相关目标
+            if ($0 ~ /tools\/mklibs\/(compile|install)/) {
+                # 替换包含 mklibs 目标的行，保持其他目标不变
+                gsub(/tools\/mklibs\/compile\s+/, "")
+                gsub(/\s+tools\/mklibs\/compile/, "")
+                gsub(/tools\/mklibs\/install\s+/, "")
+                gsub(/\s+tools\/mklibs\/install/, "")
+                # 如果行变为空，跳过
+                if ($0 == "") {
+                    next
+                }
+            }
             # 打印处理后的行
             print
         }' tools/Makefile > tools/Makefile.new
@@ -513,13 +553,13 @@ start_build() {
         # 替换原始文件
         mv tools/Makefile.new tools/Makefile
         
-        log_info "已再次修改 tools/Makefile 文件，移除 m4 相关的构建规则"
+        log_info "已再次修改 tools/Makefile 文件，移除 m4 和 mklibs 相关的构建规则"
         
         # 验证修改是否成功
-        if grep -q "tools/m4" tools/Makefile; then
-            log_warn "tools/Makefile 中仍然包含 m4 相关内容，可能需要手动检查"
+        if grep -q "tools/m4\|tools/mklibs" tools/Makefile; then
+            log_warn "tools/Makefile 中仍然包含 m4 或 mklibs 相关内容，可能需要手动检查"
         else
-            log_info "tools/Makefile 修改验证成功，已移除所有 m4 相关内容"
+            log_info "tools/Makefile 修改验证成功，已移除所有 m4 和 mklibs 相关内容"
         fi
     fi
     
