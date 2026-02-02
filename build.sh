@@ -127,12 +127,16 @@ EOF
             if ($0 ~ /\$(STAGING_DIR_HOST)\/stamp\/.m4_installed:/) {
                 next
             }
-            # 跳过 mklibs 相关的规则定义
-            if ($0 ~ /^tools\/mklibs\/(compile|install|clean):/) {
-                next
-            }
             # 跳过 mklibs 安装标记文件的规则
             if ($0 ~ /\$(STAGING_DIR_HOST)\/stamp\/.mklibs_installed:/) {
+                next
+            }
+            # 跳过 cmake 相关的规则定义
+            if ($0 ~ /^tools\/cmake\/(compile|install|clean):/) {
+                next
+            }
+            # 跳过 cmake 安装标记文件的规则
+            if ($0 ~ /\$(STAGING_DIR_HOST)\/stamp\/.cmake_installed:/) {
                 next
             }
             # 移除编译列表中的 m4 相关目标
@@ -159,6 +163,18 @@ EOF
                     next
                 }
             }
+            # 移除编译列表中的 cmake 相关目标
+            if ($0 ~ /tools\/cmake\/(compile|install)/) {
+                # 替换包含 cmake 目标的行，保持其他目标不变
+                gsub(/tools\/cmake\/compile\s+/, "")
+                gsub(/\s+tools\/cmake\/compile/, "")
+                gsub(/tools\/cmake\/install\s+/, "")
+                gsub(/\s+tools\/cmake\/install/, "")
+                # 如果行变为空，跳过
+                if ($0 == "") {
+                    next
+                }
+            }
             # 打印处理后的行
             print
         }' tools/Makefile > tools/Makefile.new
@@ -169,10 +185,10 @@ EOF
         log_info "已修改 tools/Makefile 文件，移除 m4 和 mklibs 相关的构建规则"
         
         # 验证修改是否成功
-        if grep -q "tools/m4\|tools/mklibs" tools/Makefile; then
-            log_warn "tools/Makefile 中仍然包含 m4 或 mklibs 相关内容，可能需要手动检查"
+        if grep -q "tools/m4\|tools/mklibs\|tools/cmake" tools/Makefile; then
+            log_warn "tools/Makefile 中仍然包含 m4、mklibs 或 cmake 相关内容，可能需要手动检查"
         else
-            log_info "tools/Makefile 修改验证成功，已移除所有 m4 和 mklibs 相关内容"
+            log_info "tools/Makefile 修改验证成功，已移除所有 m4、mklibs 和 cmake 相关内容"
         fi
     else
         log_warn "tools/Makefile 文件不存在，跳过修改"
@@ -373,6 +389,12 @@ start_build() {
         touch build_dir/host/mklibs-0.1.35/.configured
         touch build_dir/host/mklibs-0.1.35/.prepared
         
+        # 创建 cmake 构建目录和标记文件
+        mkdir -p build_dir/host/cmake-3.7.1
+        touch build_dir/host/cmake-3.7.1/.built
+        touch build_dir/host/cmake-3.7.1/.configured
+        touch build_dir/host/cmake-3.7.1/.prepared
+        
         # 创建 staging 目录并链接系统 m4
         mkdir -p staging_dir/host/bin
         ln -sf /usr/bin/m4 staging_dir/host/bin/m4
@@ -381,6 +403,7 @@ start_build() {
         mkdir -p staging_dir/host/stamp
         touch staging_dir/host/stamp/.m4_installed
         touch staging_dir/host/stamp/.mklibs_installed
+        touch staging_dir/host/stamp/.cmake_installed
         
         log_info "已准备好跳过 m4 和 mklibs 构建，使用系统 m4"
     else
@@ -438,6 +461,12 @@ start_build() {
             touch build_dir/host/mklibs-0.1.35/.configured
             touch build_dir/host/mklibs-0.1.35/.prepared
             
+            # 创建 cmake 构建目录和标记文件
+            mkdir -p build_dir/host/cmake-3.7.1
+            touch build_dir/host/cmake-3.7.1/.built
+            touch build_dir/host/cmake-3.7.1/.configured
+            touch build_dir/host/cmake-3.7.1/.prepared
+            
             # 创建 staging 目录并链接系统 m4
             mkdir -p staging_dir/host/bin
             # 先删除可能存在的链接，然后重新创建
@@ -448,12 +477,15 @@ start_build() {
             mkdir -p staging_dir/host/stamp
             touch staging_dir/host/stamp/.m4_installed
             touch staging_dir/host/stamp/.mklibs_installed
+            touch staging_dir/host/stamp/.cmake_installed
             
             # 确保文件权限正确
             chmod 755 build_dir/host/m4-1.4.18 2>/dev/null || true
             chmod 644 build_dir/host/m4-1.4.18/* 2>/dev/null || true
             chmod 755 build_dir/host/mklibs-0.1.35 2>/dev/null || true
             chmod 644 build_dir/host/mklibs-0.1.35/* 2>/dev/null || true
+            chmod 755 build_dir/host/cmake-3.7.1 2>/dev/null || true
+            chmod 644 build_dir/host/cmake-3.7.1/* 2>/dev/null || true
             chmod 755 staging_dir/host/bin 2>/dev/null || true
             chmod 755 staging_dir/host/bin/m4 2>/dev/null || true
             chmod 755 staging_dir/host/stamp 2>/dev/null || true
@@ -484,6 +516,18 @@ start_build() {
             log_info "已修改 tools/mklibs/Makefile 文件，使其跳过构建"
         fi
         
+        # 直接修改 tools/cmake/Makefile，使其跳过构建
+        if [ -f "tools/cmake/Makefile" ]; then
+            log_info "修改 tools/cmake/Makefile 文件，使其跳过构建..."
+            # 备份原始 Makefile
+            cp tools/cmake/Makefile tools/cmake/Makefile.backup
+            
+            # 使用脚本创建新的 Makefile，确保 tab 字符正确
+            bash ../scripts/create-cmake-makefile.sh
+            
+            log_info "已修改 tools/cmake/Makefile 文件，使其跳过构建"
+        fi
+        
         # 验证系统 m4 是否可用
         if [ -f "staging_dir/host/bin/m4" ]; then
             log_info "系统 m4 已成功链接到 staging 目录"
@@ -491,7 +535,7 @@ start_build() {
             log_warn "无法创建 m4 链接，但将继续使用系统 m4"
         fi
         
-        log_info "已强制配置使用系统 m4，构建系统将跳过 m4 构建"
+        log_info "已强制配置使用系统 m4，构建系统将跳过 m4、mklibs 和 cmake 构建"
     else
         # 为 m4 添加额外的编译参数以解决兼容性问题
         export CFLAGS="-O2 -fno-stack-protector -U_FORTIFY_SOURCE"
