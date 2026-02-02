@@ -428,6 +428,12 @@ start_build() {
         touch build_dir/host/mklibs-0.1.35/.configured
         touch build_dir/host/mklibs-0.1.35/.prepared
         
+        # 创建 cmake 构建目录和标记文件
+        mkdir -p build_dir/host/cmake-3.7.1
+        touch build_dir/host/cmake-3.7.1/.built
+        touch build_dir/host/cmake-3.7.1/.configured
+        touch build_dir/host/cmake-3.7.1/.prepared
+        
         # 创建 staging 目录并链接系统 m4
         mkdir -p staging_dir/host/bin
         ln -sf /usr/bin/m4 staging_dir/host/bin/m4
@@ -436,8 +442,9 @@ start_build() {
         mkdir -p staging_dir/host/stamp
         touch staging_dir/host/stamp/.m4_installed
         touch staging_dir/host/stamp/.mklibs_installed
+        touch staging_dir/host/stamp/.cmake_installed
         
-        log_info "已重新创建 m4 和 mklibs 相关文件，使用系统 m4"
+        log_info "已重新创建 m4、mklibs 和 cmake 相关文件，使用系统 m4"
     fi
     
     # 尝试逐个构建工具，以提高稳定性
@@ -593,12 +600,16 @@ start_build() {
             if ($0 ~ /\$(STAGING_DIR_HOST)\/stamp\/.m4_installed:/) {
                 next
             }
-            # 跳过 mklibs 相关的规则定义
-            if ($0 ~ /^tools\/mklibs\/(compile|install|clean):/) {
-                next
-            }
             # 跳过 mklibs 安装标记文件的规则
             if ($0 ~ /\$(STAGING_DIR_HOST)\/stamp\/.mklibs_installed:/) {
+                next
+            }
+            # 跳过 cmake 相关的规则定义
+            if ($0 ~ /^tools\/cmake\/(compile|install|clean):/) {
+                next
+            }
+            # 跳过 cmake 安装标记文件的规则
+            if ($0 ~ /\$(STAGING_DIR_HOST)\/stamp\/.cmake_installed:/) {
                 next
             }
             # 移除编译列表中的 m4 相关目标
@@ -635,16 +646,16 @@ start_build() {
         log_info "已再次修改 tools/Makefile 文件，移除 m4 和 mklibs 相关的构建规则"
         
         # 验证修改是否成功
-        if grep -q "tools/m4\|tools/mklibs" tools/Makefile; then
-            log_warn "tools/Makefile 中仍然包含 m4 或 mklibs 相关内容，可能需要手动检查"
+        if grep -q "tools/m4\|tools/mklibs\|tools/cmake" tools/Makefile; then
+            log_warn "tools/Makefile 中仍然包含 m4、mklibs 或 cmake 相关内容，可能需要手动检查"
         else
-            log_info "tools/Makefile 修改验证成功，已移除所有 m4 和 mklibs 相关内容"
+            log_info "tools/Makefile 修改验证成功，已移除所有 m4、mklibs 和 cmake 相关内容"
         fi
     fi
     
-    # 再次确保 m4 和 mklibs 标记文件存在，防止构建系统在构建固件时尝试构建它们
+    # 再次确保 m4、mklibs 和 cmake 标记文件存在，防止构建系统在构建固件时尝试构建它们
     if command -v m4 > /dev/null; then
-        log_info "再次确保 m4 和 mklibs 标记文件存在，防止构建系统在构建固件时尝试构建它们..."
+        log_info "再次确保 m4、mklibs 和 cmake 标记文件存在，防止构建系统在构建固件时尝试构建它们..."
         # 再次创建 m4 必要的目录和文件
         mkdir -p build_dir/host/m4-1.4.18
         touch build_dir/host/m4-1.4.18/.built
@@ -657,6 +668,12 @@ start_build() {
         touch build_dir/host/mklibs-0.1.35/.configured
         touch build_dir/host/mklibs-0.1.35/.prepared
         
+        # 再次创建 cmake 必要的目录和文件
+        mkdir -p build_dir/host/cmake-3.7.1
+        touch build_dir/host/cmake-3.7.1/.built
+        touch build_dir/host/cmake-3.7.1/.configured
+        touch build_dir/host/cmake-3.7.1/.prepared
+        
         mkdir -p staging_dir/host/bin
         rm -f staging_dir/host/bin/m4 2>/dev/null || true
         ln -sf /usr/bin/m4 staging_dir/host/bin/m4 2>/dev/null || true
@@ -664,8 +681,9 @@ start_build() {
         mkdir -p staging_dir/host/stamp
         touch staging_dir/host/stamp/.m4_installed
         touch staging_dir/host/stamp/.mklibs_installed
+        touch staging_dir/host/stamp/.cmake_installed
         
-        log_info "m4 和 mklibs 标记文件已再次确保存在，构建系统将在构建固件时跳过它们的构建"
+        log_info "m4、mklibs 和 cmake 标记文件已再次确保存在，构建系统将在构建固件时跳过它们的构建"
     fi
     
     # 构建完整固件

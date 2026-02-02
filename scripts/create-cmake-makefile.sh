@@ -45,8 +45,8 @@ $(HOST_BUILD_DIR)/.prepared:
 	touch $@' > tools/cmake/Makefile
 
 # 使用 sed 确保命令行以 tab 字符开头
-sed -i 's/^	//' tools/cmake/Makefile
+sed -i 's/^\t//' tools/cmake/Makefile
 sed -i 's/^true$/\ttrue/' tools/cmake/Makefile
-sed -i 's/^touch $@$/	touch $@/' tools/cmake/Makefile
+sed -i 's/^touch $@$/\ttouch $@/' tools/cmake/Makefile
 
 echo "cmake Makefile 创建完成"
