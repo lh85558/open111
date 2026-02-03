@@ -229,66 +229,125 @@ EOF
     git config --global pack.deltaCompression false
     git config --global fetch.fsckObjects false
     git config --global fetch.recurseSubmodules false
+    # 增加网络连接稳定性
+    git config --global http.keepAlive true
+    git config --global pack.deltaCacheSize 2047m
+    git config --global pack.packSizeLimit 2047m
+    git config --global pack.windowMemory 2047m
+    git config --global remote.origin.protocol https
+    git config --global http.userAgent "Mozilla/5.0"
+    # 禁用 IPv6 以避免网络问题
+    git config --global http.ipv4 true
+    git config --global http.proxy ''
+    git config --global https.proxy ''
     
-    # 添加重试机制，最多重试 5 次，每次等待时间递增
-    local max_retries=5
+    # 添加重试机制，最多重试 10 次，每次等待时间递增
+    local max_retries=10
     local retry=0
     local success=0
+    local base_wait_time=15
     
     while [ $retry -lt $max_retries ]; do
         log_info "尝试更新 feeds (第 $((retry+1)) 次，最多 $max_retries 次)..."
         # 只更新核心 feeds，跳过 telephony 和 routing feed，避免相关错误
-        # 增加超时时间到 600 秒，避免长时间卡住
+        # 增加超时时间到 900 秒，避免长时间卡住
         # 为 git 操作添加深度限制，减少网络传输量
         export GIT_SHALLOW_CLONE=1
         export GIT_DEPTH=1
-        timeout 600 ./scripts/feeds update packages luci
-        local exit_code=$?
-        unset GIT_SHALLOW_CLONE GIT_DEPTH
+        export GIT_TERMINAL_PROMPT=0
+        export HTTP_PROXY=
+        export HTTPS_PROXY=
+        export http_proxy=
+        export https_proxy=
         
-        if [ $exit_code -eq 0 ]; then
-            success=1
-            log_info "feeds 更新成功"
-            break
-        elif [ $exit_code -eq 124 ]; then
-            # 超时错误
-            log_warn "feeds 更新超时，$((max_retries - retry - 1)) 次重试机会..."
+        # 清理之前可能失败的 feeds 目录
+        rm -rf ./feeds/packages ./feeds/luci 2>/dev/null || true
+        mkdir -p ./feeds 2>/dev/null || true
+        
+        # 分步骤更新 feeds，先更新 packages，再更新 luci
+        log_info "更新 packages feed..."
+        timeout 900 ./scripts/feeds update packages
+        local packages_exit_code=$?
+        
+        if [ $packages_exit_code -eq 0 ]; then
+            log_info "packages feed 更新成功"
+            
+            log_info "更新 luci feed..."
+            timeout 900 ./scripts/feeds update luci
+            local luci_exit_code=$?
+            
+            if [ $luci_exit_code -eq 0 ]; then
+                log_info "luci feed 更新成功"
+                success=1
+                break
+            else
+                log_warn "luci feed 更新失败，将重试整个过程"
+            fi
         else
-            # 其他错误
-            log_warn "feeds 更新失败 (退出码: $exit_code)，$((max_retries - retry - 1)) 次重试机会..."
-            # 清理失败的 feeds 目录，避免下次更新时出现问题
-            rm -rf ./feeds/packages ./feeds/luci 2>/dev/null || true
+            log_warn "packages feed 更新失败，将重试整个过程"
         fi
+        
+        unset GIT_SHALLOW_CLONE GIT_DEPTH GIT_TERMINAL_PROMPT HTTP_PROXY HTTPS_PROXY http_proxy https_proxy
         
         retry=$((retry + 1))
         
-        # 递增等待时间，从 10 秒开始，每次增加 10 秒
-        local wait_time=$((10 + retry * 10))
-        log_info "等待 $wait_time 秒后重试..."
-        sleep $wait_time
+        if [ $retry -lt $max_retries ]; then
+            # 递增等待时间，从 base_wait_time 开始，每次增加 10 秒
+            local wait_time=$((base_wait_time + retry * 10))
+            log_info "等待 $wait_time 秒后重试..."
+            sleep $wait_time
+            
+            # 重置 Git 连接
+            log_info "重置 Git 连接和配置..."
+            git config --global --unset http.proxy
+            git config --global --unset https.proxy
+            git config --global http.sslVerify false
+        fi
     done
     
     if [ $success -eq 0 ]; then
         log_error "feeds 更新失败，尝试使用备用方法..."
         # 尝试单独更新每个 feed，增加成功率
-        log_info "尝试单独更新 packages feed..."
+        
+        # 清理之前可能失败的 feeds 目录
+        rm -rf ./feeds/packages ./feeds/luci 2>/dev/null || true
+        mkdir -p ./feeds 2>/dev/null || true
+        
+        # 尝试更新 packages feed，使用更激进的网络设置
+        log_info "尝试单独更新 packages feed (备用方法)..."
         export GIT_SHALLOW_CLONE=1
         export GIT_DEPTH=1
-        rm -rf ./feeds/packages 2>/dev/null || true
-        timeout 300 ./scripts/feeds update packages
+        export GIT_TERMINAL_PROMPT=0
+        export HTTP_PROXY=
+        export HTTPS_PROXY=
+        export http_proxy=
+        export https_proxy=
+        export GIT_SSL_NO_VERIFY=1
+        export GIT_CURL_VERBOSE=0
+        
+        # 增加超时时间到 1200 秒
+        timeout 1200 ./scripts/feeds update packages
         local packages_exit_code=$?
-        unset GIT_SHALLOW_CLONE GIT_DEPTH
+        unset GIT_SHALLOW_CLONE GIT_DEPTH GIT_TERMINAL_PROMPT HTTP_PROXY HTTPS_PROXY http_proxy https_proxy GIT_SSL_NO_VERIFY GIT_CURL_VERBOSE
         
         if [ $packages_exit_code -eq 0 ]; then
             log_info "packages feed 更新成功"
             
-            log_info "尝试单独更新 luci feed..."
+            # 尝试更新 luci feed
+            log_info "尝试单独更新 luci feed (备用方法)..."
             export GIT_SHALLOW_CLONE=1
             export GIT_DEPTH=1
-            rm -rf ./feeds/luci 2>/dev/null || true
-            timeout 300 ./scripts/feeds update luci
+            export GIT_TERMINAL_PROMPT=0
+            export HTTP_PROXY=
+            export HTTPS_PROXY=
+            export http_proxy=
+            export https_proxy=
+            export GIT_SSL_NO_VERIFY=1
+            export GIT_CURL_VERBOSE=0
+            
+            timeout 1200 ./scripts/feeds update luci
             local luci_exit_code=$?
-            unset GIT_SHALLOW_CLONE GIT_DEPTH
+            unset GIT_SHALLOW_CLONE GIT_DEPTH GIT_TERMINAL_PROMPT HTTP_PROXY HTTPS_PROXY http_proxy https_proxy GIT_SSL_NO_VERIFY GIT_CURL_VERBOSE
             
             if [ $luci_exit_code -eq 0 ]; then
                 log_info "luci feed 更新成功"
@@ -296,15 +355,87 @@ EOF
                 log_warn "luci feed 更新失败，但将继续构建"
             fi
         else
-            log_error "核心 feeds 更新也失败，构建无法继续"
-            exit 1
+            log_error "核心 feeds 更新也失败，尝试使用最终备用方法..."
+            
+            # 最终备用方法：直接从 OpenWrt 官方仓库克隆最小化的 feeds
+            log_info "使用最终备用方法：直接克隆最小化的 feeds 仓库..."
+            
+            # 清理 feeds 目录
+            rm -rf ./feeds 2>/dev/null || true
+            mkdir -p ./feeds 2>/dev/null || true
+            
+            # 克隆最小化的 packages feed
+            log_info "克隆最小化的 packages feed..."
+            git clone --depth 1 --single-branch --branch openwrt-18.06 https://git.openwrt.org/feed/packages.git ./feeds/packages
+            local packages_clone_exit=$?
+            
+            if [ $packages_clone_exit -eq 0 ]; then
+                log_info "packages feed 克隆成功"
+                
+                # 克隆最小化的 luci feed
+                log_info "克隆最小化的 luci feed..."
+                git clone --depth 1 --single-branch --branch openwrt-18.06 https://git.openwrt.org/project/luci.git ./feeds/luci
+                local luci_clone_exit=$?
+                
+                if [ $luci_clone_exit -eq 0 ]; then
+                    log_info "luci feed 克隆成功"
+                else
+                    log_error "luci feed 克隆失败，构建无法继续"
+                    exit 1
+                fi
+            else
+                log_error "packages feed 克隆失败，构建无法继续"
+                exit 1
+            fi
         fi
     fi
     
     # 安装 feeds，只安装核心 feeds
     log_info "安装 feeds..."
-    ./scripts/feeds install -a -p packages
-    ./scripts/feeds install -a -p luci
+    
+    # 添加重试机制用于 feed 安装
+    local install_max_retries=3
+    local install_retry=0
+    local install_success=0
+    
+    while [ $install_retry -lt $install_max_retries ]; do
+        log_info "尝试安装 feeds (第 $((install_retry+1)) 次，最多 $install_max_retries 次)..."
+        
+        # 安装 packages feed
+        ./scripts/feeds install -a -p packages
+        local packages_install_exit=$?
+        
+        if [ $packages_install_exit -eq 0 ]; then
+            log_info "packages feed 安装成功"
+            
+            # 安装 luci feed
+            ./scripts/feeds install -a -p luci
+            local luci_install_exit=$?
+            
+            if [ $luci_install_exit -eq 0 ]; then
+                log_info "luci feed 安装成功"
+                install_success=1
+                break
+            else
+                log_warn "luci feed 安装失败，将重试整个过程"
+            fi
+        else
+            log_warn "packages feed 安装失败，将重试整个过程"
+        fi
+        
+        install_retry=$((install_retry + 1))
+        
+        if [ $install_retry -lt $install_max_retries ]; then
+            local install_wait_time=$((10 + install_retry * 5))
+            log_info "等待 $install_wait_time 秒后重试..."
+            sleep $install_wait_time
+        fi
+    done
+    
+    if [ $install_success -eq 0 ]; then
+        log_error "feeds 安装失败，构建无法继续"
+        exit 1
+    fi
     
     cd ..
     log_info "OpenWrt 源码准备完成"
