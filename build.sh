@@ -2,8 +2,6 @@
 # THDN-PrintServer OpenWrt17 一键构建脚本
 # 适用于 Ubuntu 22.04 LTS
 
-set -e
-
 # 颜色输出
 RED='\033[0;31m'
 GREEN='\033[0;32m'
