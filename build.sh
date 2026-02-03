@@ -92,23 +92,21 @@ clone_openwrt() {
         git checkout v17.01.7
     fi
     
-    # 修改 feeds.conf 文件，使用更稳定的源和减少克隆深度
+    # 修改或创建 feeds.conf 文件，使用更稳定的源和减少克隆深度
     # OpenWrt feeds 脚本优先使用 feeds.conf 文件
+    log_info "修改或创建 feeds.conf 文件，使用更稳定的源..."
+    # 备份原始文件（如果存在）
     if [ -f "feeds.conf" ]; then
-        log_info "修改 feeds.conf 文件，使用更稳定的源..."
-        # 备份原始文件
         cp feeds.conf feeds.conf.backup
-        
-        # 创建新的 feeds.conf 文件，使用更稳定的源
-        cat > feeds.conf << 'EOF'
+    fi
+    
+    # 创建新的 feeds.conf 文件，使用更稳定的源
+    cat > feeds.conf << 'EOF'
 src-git packages https://git.openwrt.org/feed/packages.git^545d2fadd7245783e40f235fe2c5d8c3ab1549cd
 src-git luci https://git.openwrt.org/project/luci.git^71e2af4f51567061600840040508d642120a8532
 EOF
-        
-        log_info "已修改 feeds.conf 文件，使用更稳定的源"
-    else
-        log_warn "feeds.conf 文件不存在，跳过修改"
-    fi
+    
+    log_info "已修改或创建 feeds.conf 文件，使用更稳定的源"
     
     # 检查并修改 tools/Makefile 文件，移除 m4 相关的构建规则
     if [ -f "tools/Makefile" ]; then
