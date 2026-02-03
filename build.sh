@@ -139,6 +139,14 @@ EOF
             if ($0 ~ /\$(STAGING_DIR_HOST)\/stamp\/.cmake_installed:/) {
                 next
             }
+            # 跳过 squashfs 相关的规则定义
+            if ($0 ~ /^tools\/squashfs\/(compile|install|clean):/) {
+                next
+            }
+            # 跳过 squashfs 安装标记文件的规则
+            if ($0 ~ /\$(STAGING_DIR_HOST)\/stamp\/.squashfs_installed:/) {
+                next
+            }
             # 移除编译列表中的 m4 相关目标
             if ($0 ~ /tools\/m4\/(compile|install)/) {
                 # 替换包含 m4 目标的行，保持其他目标不变
@@ -175,6 +183,18 @@ EOF
                     next
                 }
             }
+            # 移除编译列表中的 squashfs 相关目标
+            if ($0 ~ /tools\/squashfs\/(compile|install)/) {
+                # 替换包含 squashfs 目标的行，保持其他目标不变
+                gsub(/tools\/squashfs\/compile\s+/, "")
+                gsub(/\s+tools\/squashfs\/compile/, "")
+                gsub(/tools\/squashfs\/install\s+/, "")
+                gsub(/\s+tools\/squashfs\/install/, "")
+                # 如果行变为空，跳过
+                if ($0 == "") {
+                    next
+                }
+            }
             # 打印处理后的行
             print
         }' tools/Makefile > tools/Makefile.new
@@ -185,10 +205,10 @@ EOF
         log_info "已修改 tools/Makefile 文件，移除 m4 和 mklibs 相关的构建规则"
         
         # 验证修改是否成功
-        if grep -q "tools/m4\|tools/mklibs\|tools/cmake" tools/Makefile; then
-            log_warn "tools/Makefile 中仍然包含 m4、mklibs 或 cmake 相关内容，可能需要手动检查"
+        if grep -q "tools/m4\|tools/mklibs\|tools/cmake\|tools/squashfs" tools/Makefile; then
+            log_warn "tools/Makefile 中仍然包含 m4、mklibs、cmake 或 squashfs 相关内容，可能需要手动检查"
         else
-            log_info "tools/Makefile 修改验证成功，已移除所有 m4、mklibs 和 cmake 相关内容"
+            log_info "tools/Makefile 修改验证成功，已移除所有 m4、mklibs、cmake 和 squashfs 相关内容"
         fi
     else
         log_warn "tools/Makefile 文件不存在，跳过修改"
@@ -395,6 +415,12 @@ start_build() {
         touch build_dir/host/cmake-3.7.1/.configured
         touch build_dir/host/cmake-3.7.1/.prepared
         
+        # 创建 squashfs 构建目录和标记文件
+        mkdir -p build_dir/host/squashfs3.0
+        touch build_dir/host/squashfs3.0/.built
+        touch build_dir/host/squashfs3.0/.configured
+        touch build_dir/host/squashfs3.0/.prepared
+        
         # 创建 staging 目录并链接系统 m4
         mkdir -p staging_dir/host/bin
         ln -sf /usr/bin/m4 staging_dir/host/bin/m4
@@ -404,8 +430,9 @@ start_build() {
         touch staging_dir/host/stamp/.m4_installed
         touch staging_dir/host/stamp/.mklibs_installed
         touch staging_dir/host/stamp/.cmake_installed
+        touch staging_dir/host/stamp/.squashfs_installed
         
-        log_info "已准备好跳过 m4 和 mklibs 构建，使用系统 m4"
+        log_info "已准备好跳过 m4、mklibs、cmake 和 squashfs 构建，使用系统 m4"
     else
         log_warn "系统未安装 m4，将尝试构建..."
     fi
@@ -434,6 +461,12 @@ start_build() {
         touch build_dir/host/cmake-3.7.1/.configured
         touch build_dir/host/cmake-3.7.1/.prepared
         
+        # 创建 squashfs 构建目录和标记文件
+        mkdir -p build_dir/host/squashfs3.0
+        touch build_dir/host/squashfs3.0/.built
+        touch build_dir/host/squashfs3.0/.configured
+        touch build_dir/host/squashfs3.0/.prepared
+        
         # 创建 staging 目录并链接系统 m4
         mkdir -p staging_dir/host/bin
         ln -sf /usr/bin/m4 staging_dir/host/bin/m4
@@ -443,8 +476,9 @@ start_build() {
         touch staging_dir/host/stamp/.m4_installed
         touch staging_dir/host/stamp/.mklibs_installed
         touch staging_dir/host/stamp/.cmake_installed
+        touch staging_dir/host/stamp/.squashfs_installed
         
-        log_info "已重新创建 m4、mklibs 和 cmake 相关文件，使用系统 m4"
+        log_info "已重新创建 m4、mklibs、cmake 和 squashfs 相关文件，使用系统 m4"
     fi
     
     # 尝试逐个构建工具，以提高稳定性
@@ -493,6 +527,8 @@ start_build() {
             chmod 644 build_dir/host/mklibs-0.1.35/* 2>/dev/null || true
             chmod 755 build_dir/host/cmake-3.7.1 2>/dev/null || true
             chmod 644 build_dir/host/cmake-3.7.1/* 2>/dev/null || true
+            chmod 755 build_dir/host/squashfs3.0 2>/dev/null || true
+            chmod 644 build_dir/host/squashfs3.0/* 2>/dev/null || true
             chmod 755 staging_dir/host/bin 2>/dev/null || true
             chmod 755 staging_dir/host/bin/m4 2>/dev/null || true
             chmod 755 staging_dir/host/stamp 2>/dev/null || true
@@ -535,6 +571,18 @@ start_build() {
             log_info "已修改 tools/cmake/Makefile 文件，使其跳过构建"
         fi
         
+        # 直接修改 tools/squashfs/Makefile，使其跳过构建
+        if [ -f "tools/squashfs/Makefile" ]; then
+            log_info "修改 tools/squashfs/Makefile 文件，使其跳过构建..."
+            # 备份原始 Makefile
+            cp tools/squashfs/Makefile tools/squashfs/Makefile.backup
+            
+            # 使用脚本创建新的 Makefile，确保 tab 字符正确
+            bash ../scripts/create-squashfs-makefile.sh
+            
+            log_info "已修改 tools/squashfs/Makefile 文件，使其跳过构建"
+        fi
+        
         # 验证系统 m4 是否可用
         if [ -f "staging_dir/host/bin/m4" ]; then
             log_info "系统 m4 已成功链接到 staging 目录"
@@ -542,7 +590,7 @@ start_build() {
             log_warn "无法创建 m4 链接，但将继续使用系统 m4"
         fi
         
-        log_info "已强制配置使用系统 m4，构建系统将跳过 m4、mklibs 和 cmake 构建"
+        log_info "已强制配置使用系统 m4，构建系统将跳过 m4、mklibs、cmake 和 squashfs 构建"
     else
         # 为 m4 添加额外的编译参数以解决兼容性问题
         export CFLAGS="-O2 -fno-stack-protector -U_FORTIFY_SOURCE"
@@ -653,9 +701,9 @@ start_build() {
         fi
     fi
     
-    # 再次确保 m4、mklibs 和 cmake 标记文件存在，防止构建系统在构建固件时尝试构建它们
+    # 再次确保 m4、mklibs、cmake 和 squashfs 标记文件存在，防止构建系统在构建固件时尝试构建它们
     if command -v m4 > /dev/null; then
-        log_info "再次确保 m4、mklibs 和 cmake 标记文件存在，防止构建系统在构建固件时尝试构建它们..."
+        log_info "再次确保 m4、mklibs、cmake 和 squashfs 标记文件存在，防止构建系统在构建固件时尝试构建它们..."
         # 再次创建 m4 必要的目录和文件
         mkdir -p build_dir/host/m4-1.4.18
         touch build_dir/host/m4-1.4.18/.built
@@ -674,6 +722,12 @@ start_build() {
         touch build_dir/host/cmake-3.7.1/.configured
         touch build_dir/host/cmake-3.7.1/.prepared
         
+        # 再次创建 squashfs 必要的目录和文件
+        mkdir -p build_dir/host/squashfs3.0
+        touch build_dir/host/squashfs3.0/.built
+        touch build_dir/host/squashfs3.0/.configured
+        touch build_dir/host/squashfs3.0/.prepared
+        
         mkdir -p staging_dir/host/bin
         rm -f staging_dir/host/bin/m4 2>/dev/null || true
         ln -sf /usr/bin/m4 staging_dir/host/bin/m4 2>/dev/null || true
@@ -682,8 +736,9 @@ start_build() {
         touch staging_dir/host/stamp/.m4_installed
         touch staging_dir/host/stamp/.mklibs_installed
         touch staging_dir/host/stamp/.cmake_installed
+        touch staging_dir/host/stamp/.squashfs_installed
         
-        log_info "m4、mklibs 和 cmake 标记文件已再次确保存在，构建系统将在构建固件时跳过它们的构建"
+        log_info "m4、mklibs、cmake 和 squashfs 标记文件已再次确保存在，构建系统将在构建固件时跳过它们的构建"
     fi
     
     # 构建完整固件
