@@ -911,13 +911,26 @@ OpenWrt版本: ${OPENWRT_VERSION}
 - 中文 Web 界面
 
 固件文件:
-$(ls -la output/*.bin)
 EOF
+        
+        # 列出所有固件文件
+        for bin_file in output/*.bin; do
+            if [ -f "$bin_file" ]; then
+                local file_size=$(du -h "$bin_file" | cut -f1)
+                local file_name=$(basename "$bin_file")
+                echo "- ${file_name} (${file_size})" >> output/firmware-info.txt
+            fi
+        done
         
         log_info "固件已生成到 output/ 目录"
         log_info "固件信息已保存到 output/firmware-info.txt"
+        log_info "固件文件列表:"
+        ls -lh output/*.bin
     else
         log_error "未找到生成的固件文件"
+        log_error "期望的目录: openwrt/${firmware_dir}"
+        log_error "实际目录内容:"
+        ls -la openwrt/bin/targets/ 2>/dev/null || log_error "bin/targets 目录不存在"
         exit 1
     fi
 }
