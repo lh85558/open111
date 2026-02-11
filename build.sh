@@ -514,9 +514,18 @@ start_build() {
     export FORCE_UNSAFE_CONFIGURE=1
     export NINJAJOBS=1
     
+    # 增加 GCC 编译参数，避免编译错误
+    export CFLAGS="-O2 -fno-stack-protector -U_FORTIFY_SOURCE"
+    export CXXFLAGS="-O2 -fno-stack-protector -U_FORTIFY_SOURCE"
+    
     # 增加系统资源限制
     ulimit -c unlimited
     ulimit -n 4096
+    ulimit -s unlimited
+    
+    # 优化 GCC 工具链编译，避免内存不足问题
+    export GCC_OPTIMIZATION_LEVEL=2
+    export BOOTSTRAP_CFLAGS="-O2 -fno-stack-protector"
     
     # 尝试跳过 OpenWrt 自带的 m4 和 mklibs 工具构建，直接使用系统安装的 m4
     log_info "检查系统 m4 工具..."
@@ -870,6 +879,20 @@ start_build() {
     
     # 构建完整固件
     log_info "构建完整固件..."
+    
+    # 首先尝试使用预编译的工具链，避免编译错误
+    log_info "检查是否有可用的预编译工具链..."
+    if [ -d "toolchain" ]; then
+        log_info "尝试直接使用预编译工具链..."
+        make toolchain/install V=0
+        local toolchain_exit_code=$?
+        if [ $toolchain_exit_code -eq 0 ]; then
+            log_info "预编译工具链安装成功"
+        else
+            log_warn "预编译工具链安装失败，将尝试编译工具链"
+        fi
+    fi
+    
     # 使用更合理的输出级别，减少日志量
     # V=0 表示安静模式，只显示错误
     make V=0
