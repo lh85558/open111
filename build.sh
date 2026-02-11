@@ -870,7 +870,17 @@ start_build() {
     
     # 构建完整固件
     log_info "构建完整固件..."
-    make V=s
+    # 使用更合理的输出级别，减少日志量
+    # V=0 表示安静模式，只显示错误
+    make V=0
+    
+    local make_exit_code=$?
+    if [ $make_exit_code -ne 0 ]; then
+        log_error "固件构建失败，退出码: $make_exit_code"
+        log_error "尝试使用详细模式重新构建，以查看具体错误..."
+        make V=s
+        exit 1
+    fi
     
     cd ..
     log_info "编译完成"
