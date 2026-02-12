@@ -515,17 +515,24 @@ start_build() {
     export NINJAJOBS=1
     
     # 增加 GCC 编译参数，避免编译错误
-    export CFLAGS="-O2 -fno-stack-protector -U_FORTIFY_SOURCE"
-    export CXXFLAGS="-O2 -fno-stack-protector -U_FORTIFY_SOURCE"
+    # 移除 -fstack-protector 选项，因为 GCC 5.4.0 可能不支持
+    export CFLAGS="-O2 -U_FORTIFY_SOURCE -fno-strict-aliasing"
+    export CXXFLAGS="-O2 -U_FORTIFY_SOURCE -fno-strict-aliasing"
     
     # 增加系统资源限制
     ulimit -c unlimited
     ulimit -n 4096
     ulimit -s unlimited
+    ulimit -m unlimited
     
     # 优化 GCC 工具链编译，避免内存不足问题
     export GCC_OPTIMIZATION_LEVEL=2
-    export BOOTSTRAP_CFLAGS="-O2 -fno-stack-protector"
+    export BOOTSTRAP_CFLAGS="-O2 -fno-strict-aliasing"
+    
+    # 添加额外的 GCC 编译选项，提高稳定性
+    export CONFIGURE_ARGS="--disable-bootstrap --disable-werror"
+    export CC="gcc"
+    export CXX="g++"
     
     # 尝试跳过 OpenWrt 自带的 m4 和 mklibs 工具构建，直接使用系统安装的 m4
     log_info "检查系统 m4 工具..."
@@ -729,8 +736,8 @@ start_build() {
         log_info "已强制配置使用系统 m4，构建系统将跳过 m4、mklibs、cmake 和 squashfs 构建"
     else
         # 为 m4 添加额外的编译参数以解决兼容性问题
-        export CFLAGS="-O2 -fno-stack-protector -U_FORTIFY_SOURCE"
-        export CXXFLAGS="-O2 -fno-stack-protector -U_FORTIFY_SOURCE"
+        export CFLAGS="-O2 -U_FORTIFY_SOURCE -fno-strict-aliasing"
+        export CXXFLAGS="-O2 -U_FORTIFY_SOURCE -fno-strict-aliasing"
         make tools/m4/compile V=s
         if [ $? -ne 0 ]; then
             log_error "m4 构建失败"
